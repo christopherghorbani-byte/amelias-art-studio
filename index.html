@@ -81,7 +81,7 @@
     width: 100%; height: 100%;
     touch-action: none;
   }
-  #overlay-canvas { pointer-events: none; }
+  #main-canvas { pointer-events: none; }
 
   /* ── TOOL BAR ── */
   #toolbar {
@@ -770,6 +770,7 @@ function getPos(e) {
 let sfxThrottle = 0;
 function onPointerDown(e) {
   e.preventDefault();
+  overlayCanvas.setPointerCapture(e.pointerId);
   getAudio(); // unlock audio context on user gesture
   const pos = getPos(e);
   isDrawing = true;
