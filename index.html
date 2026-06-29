@@ -501,6 +501,11 @@
         <option value="drum">🥁 Puppy Drum</option>
         <option value="synth">🎮 Magic Synth</option>
         <option value="harp">🌈 Rainbow Harp</option>
+        <option value="steel">🌴 Steel Drum</option>
+        <option value="flute">🎵 Flute</option>
+        <option value="marimba">🎼 Marimba</option>
+        <option value="uke">🎸 Ukulele</option>
+        <option value="choir">🎶 Choir</option>
       </select>
       <span id="tempo-label">Tempo</span>
       <input type="range" id="tempo-slider" min="60" max="200" value="120">
@@ -789,6 +794,68 @@ function playSeqNote(row, instrument) {
       gain.gain.setValueAtTime(0.15, t);
       gain.gain.exponentialRampToValueAtTime(0.001, t + 0.4);
       osc.connect(gain); osc.start(t); osc.stop(t + 0.4);
+    } else if (instrument === 'steel') {
+      // Steel pan: fundamental + detuned 2nd + 3rd harmonic with metallic decay
+      [[1, 0.22, 0.45], [2.02, 0.13, 0.28], [2.98, 0.05, 0.14]].forEach(([mult, vol, decay]) => {
+        const o = ac.createOscillator(); o.type = 'sine';
+        o.frequency.value = freq * mult;
+        const g = ac.createGain();
+        g.gain.setValueAtTime(vol, t);
+        g.gain.exponentialRampToValueAtTime(0.001, t + decay);
+        o.connect(g); g.connect(ac.destination);
+        o.start(t); o.stop(t + decay + 0.02);
+      });
+    } else if (instrument === 'flute') {
+      // Breathy flute: sine + slow attack + gentle vibrato
+      const osc = ac.createOscillator(); osc.type = 'sine';
+      osc.frequency.value = freq;
+      const vib = ac.createOscillator(); vib.type = 'sine'; vib.frequency.value = 5.5;
+      const vibG = ac.createGain(); vibG.gain.value = freq * 0.012;
+      vib.connect(vibG); vibG.connect(osc.frequency);
+      gain.gain.setValueAtTime(0.001, t);
+      gain.gain.linearRampToValueAtTime(0.13, t + 0.07);
+      gain.gain.setValueAtTime(0.1, t + 0.28);
+      gain.gain.exponentialRampToValueAtTime(0.001, t + 0.55);
+      osc.connect(gain);
+      osc.start(t); vib.start(t); osc.stop(t + 0.55); vib.stop(t + 0.55);
+    } else if (instrument === 'marimba') {
+      // Wooden marimba: sine + 4th + 10.67th harmonic (real marimba ratios)
+      [[1, 0.2, 0.38], [4, 0.07, 0.1], [10.67, 0.025, 0.05]].forEach(([mult, vol, decay]) => {
+        const o = ac.createOscillator(); o.type = 'sine';
+        o.frequency.value = freq * mult;
+        const g = ac.createGain();
+        g.gain.setValueAtTime(vol, t);
+        g.gain.exponentialRampToValueAtTime(0.001, t + decay);
+        o.connect(g); g.connect(ac.destination);
+        o.start(t); o.stop(t + 0.4);
+      });
+    } else if (instrument === 'uke') {
+      // Bright plucked ukulele: triangle + harmonic shimmer
+      const osc = ac.createOscillator(); osc.type = 'triangle';
+      osc.frequency.value = freq * 2;
+      gain.gain.setValueAtTime(0.2, t);
+      gain.gain.exponentialRampToValueAtTime(0.001, t + 0.32);
+      osc.connect(gain);
+      const osc2 = ac.createOscillator(); osc2.type = 'sine';
+      osc2.frequency.value = freq * 4;
+      const g2 = ac.createGain();
+      g2.gain.setValueAtTime(0.07, t);
+      g2.gain.exponentialRampToValueAtTime(0.001, t + 0.16);
+      osc2.connect(g2); g2.connect(ac.destination);
+      osc.start(t); osc2.start(t); osc.stop(t + 0.32); osc2.stop(t + 0.16);
+    } else if (instrument === 'choir') {
+      // Choir "aah": 5 detuned voices, slow attack, long sustain
+      [0, 2.5, -2.5, 6, -6].forEach(cents => {
+        const o = ac.createOscillator(); o.type = 'sine';
+        o.frequency.value = freq * Math.pow(2, cents / 1200);
+        const g = ac.createGain();
+        g.gain.setValueAtTime(0, t);
+        g.gain.linearRampToValueAtTime(0.052, t + 0.1);
+        g.gain.setValueAtTime(0.048, t + 0.32);
+        g.gain.exponentialRampToValueAtTime(0.001, t + 0.75);
+        o.connect(g); g.connect(ac.destination);
+        o.start(t); o.stop(t + 0.75);
+      });
     }
   } catch(e) {}
 }
@@ -1128,6 +1195,27 @@ const STAMPS = [
   { name: 'Cloud', draw: drawCloud },
   { name: 'Balloon', draw: drawBalloon },
   { name: 'Magic ✨', draw: drawMagic },
+  // Animals
+  { name: 'Bluebird', draw: drawBird },
+  { name: 'Flamingo', draw: drawFlamingo },
+  { name: 'Clownfish', draw: drawFish },
+  { name: 'Honu 🐢', draw: drawTurtle },
+  { name: 'Dolphin', draw: drawDolphin },
+  { name: 'Parrot', draw: drawParrot },
+  // Anime
+  { name: 'Anime Girl', draw: drawAnimeGirl },
+  { name: 'Cat Girl', draw: drawCatGirl },
+  { name: 'Sakura', draw: drawSakura },
+  { name: 'Magical✨', draw: drawMagicalBow },
+  // Hawaiian
+  { name: 'Plumeria', draw: drawPlumeria },
+  { name: 'Hibiscus', draw: drawHibiscus },
+  { name: 'Palm Tree', draw: drawPalmTree },
+  { name: 'Pineapple', draw: drawPineapple },
+  { name: 'Wave 🌊', draw: drawWave },
+  { name: 'Gecko', draw: drawGecko },
+  { name: 'Shaka 🤙', draw: drawShaka },
+  { name: 'Ukulele', draw: drawUkuleleStamp },
 ];
 
 function drawStamp(c, stamp, cx, cy, size) {
@@ -1442,17 +1530,511 @@ function drawBalloon(c, size) {
 
 function drawMagic(c, size) {
   const r = size * 0.42;
-  // Wand
   c.strokeStyle = '#7C3AED'; c.lineWidth = 3;
   c.beginPath(); c.moveTo(-r*0.6, r*0.6); c.lineTo(r*0.3, -r*0.3); c.stroke();
-  // Star on tip
   c.fillStyle = '#FACC15';
-  drawStarShape(c, r*0.35, -r*0.35, r*0.2, 5);
-  c.fill();
-  // Sparkles
+  drawStarShape(c, r*0.35, -r*0.35, r*0.2, 5); c.fill();
   [[-r*0.2,-r*0.7],[r*0.5,-r*0.1],[-r*0.7,0],[r*0.1,r*0.2]].forEach(([x,y]) => {
-    c.fillStyle = '#E879F9';
-    c.beginPath(); c.arc(x,y,r*0.06,0,Math.PI*2); c.fill();
+    c.fillStyle = '#E879F9'; c.beginPath(); c.arc(x,y,r*0.06,0,Math.PI*2); c.fill();
+  });
+}
+
+// ── ANIMAL STAMPS ──
+function drawBird(c, size) {
+  const r = size * 0.35;
+  // Tail
+  c.fillStyle = '#1D4ED8';
+  c.beginPath(); c.moveTo(r*0.55,r*0.1); c.lineTo(r*1.05,-r*0.2); c.lineTo(r*1.0,r*0.35); c.closePath(); c.fill();
+  // Body
+  c.fillStyle = '#60A5FA';
+  c.beginPath(); c.ellipse(r*0.05,r*0.15,r*0.55,r*0.4,-0.15,0,Math.PI*2); c.fill();
+  // Wing highlight
+  c.fillStyle = '#93C5FD';
+  c.beginPath(); c.ellipse(r*0.15,r*0.05,r*0.38,r*0.2,-0.3,0,Math.PI*2); c.fill();
+  // Head
+  c.fillStyle = '#60A5FA';
+  c.beginPath(); c.arc(-r*0.35,-r*0.25,r*0.32,0,Math.PI*2); c.fill();
+  // Cheek blush
+  c.fillStyle = '#FCA5A5';
+  c.beginPath(); c.arc(-r*0.22,-r*0.1,r*0.1,0,Math.PI*2); c.fill();
+  // Eye
+  c.fillStyle = '#1F2937'; c.beginPath(); c.arc(-r*0.42,-r*0.3,r*0.09,0,Math.PI*2); c.fill();
+  c.fillStyle = 'white'; c.beginPath(); c.arc(-r*0.39,-r*0.33,r*0.04,0,Math.PI*2); c.fill();
+  // Beak
+  c.fillStyle = '#FBBF24'; c.beginPath();
+  c.moveTo(-r*0.67,-r*0.28); c.lineTo(-r*0.95,-r*0.18); c.lineTo(-r*0.67,-r*0.1); c.closePath(); c.fill();
+  // Feet
+  c.strokeStyle = '#FBBF24'; c.lineWidth = r*0.08; c.lineCap = 'round';
+  c.beginPath(); c.moveTo(-r*0.1,r*0.52); c.lineTo(-r*0.1,r*0.75);
+  c.moveTo(r*0.1,r*0.52); c.lineTo(r*0.1,r*0.75); c.stroke();
+}
+
+function drawFlamingo(c, size) {
+  const r = size * 0.35;
+  // Body
+  c.fillStyle = '#FB7185';
+  c.beginPath(); c.ellipse(r*0.05,r*0.15,r*0.42,r*0.52,0.2,0,Math.PI*2); c.fill();
+  // Wing accent
+  c.fillStyle = '#BE123C';
+  c.beginPath(); c.ellipse(r*0.25,r*0.05,r*0.22,r*0.32,0.3,0,Math.PI*2); c.fill();
+  // Neck
+  c.strokeStyle = '#FB7185'; c.lineWidth = r*0.22; c.lineCap = 'round';
+  c.beginPath(); c.moveTo(-r*0.05,-r*0.3); c.quadraticCurveTo(-r*0.45,-r*0.7,-r*0.15,-r*1.0); c.stroke();
+  // Head
+  c.fillStyle = '#FB7185'; c.beginPath(); c.arc(-r*0.15,-r*1.0,r*0.18,0,Math.PI*2); c.fill();
+  // Beak
+  c.strokeStyle = '#F9A8D4'; c.lineWidth = r*0.12;
+  c.beginPath(); c.moveTo(-r*0.15,-r*0.93); c.quadraticCurveTo(r*0.12,-r*0.87,r*0.08,-r*0.74); c.stroke();
+  c.fillStyle = '#1F2937'; c.beginPath(); c.arc(r*0.07,-r*0.75,r*0.06,0,Math.PI*2); c.fill();
+  // Eye
+  c.fillStyle = '#FDE68A'; c.beginPath(); c.arc(-r*0.06,-r*1.04,r*0.07,0,Math.PI*2); c.fill();
+  c.fillStyle = '#1F2937'; c.beginPath(); c.arc(-r*0.06,-r*1.04,r*0.04,0,Math.PI*2); c.fill();
+  // Legs
+  c.strokeStyle = '#FBBF24'; c.lineWidth = r*0.09;
+  c.beginPath(); c.moveTo(-r*0.15,r*0.65); c.lineTo(-r*0.1,r*1.1);
+  c.moveTo(r*0.1,r*0.65); c.lineTo(r*0.15,r*1.0); c.lineTo(r*0.28,r*1.1); c.stroke();
+}
+
+function drawFish(c, size) {
+  const r = size * 0.35;
+  // Tail
+  c.fillStyle = '#F97316';
+  c.beginPath(); c.moveTo(r*0.65,0); c.lineTo(r*1.1,-r*0.45); c.lineTo(r*1.1,r*0.45); c.closePath(); c.fill();
+  // Body
+  c.fillStyle = '#FB923C';
+  c.beginPath(); c.ellipse(-r*0.05,0,r*0.7,r*0.45,0,0,Math.PI*2); c.fill();
+  // White stripes (clownfish)
+  c.save();
+  c.beginPath(); c.ellipse(-r*0.05,0,r*0.7,r*0.45,0,0,Math.PI*2); c.clip();
+  c.fillStyle = 'white'; c.fillRect(-r*0.62,-r*0.5,r*0.22,r); c.fillRect(r*0.1,-r*0.5,r*0.2,r);
+  c.restore();
+  // Dorsal fin
+  c.fillStyle = '#EA580C';
+  c.beginPath(); c.moveTo(-r*0.2,-r*0.45); c.lineTo(r*0.1,-r*0.8); c.lineTo(r*0.3,-r*0.45); c.closePath(); c.fill();
+  // Eye
+  c.fillStyle = '#1F2937'; c.beginPath(); c.arc(-r*0.42,-r*0.1,r*0.13,0,Math.PI*2); c.fill();
+  c.fillStyle = 'white'; c.beginPath(); c.arc(-r*0.38,-r*0.14,r*0.05,0,Math.PI*2); c.fill();
+  // Outline
+  c.strokeStyle = '#C2410C'; c.lineWidth = 1.5;
+  c.beginPath(); c.ellipse(-r*0.05,0,r*0.7,r*0.45,0,0,Math.PI*2); c.stroke();
+}
+
+function drawTurtle(c, size) {
+  const r = size * 0.35;
+  // Flippers
+  c.fillStyle = '#059669';
+  [[-r*0.9,-r*0.3,-0.4],[r*0.9,-r*0.3,0.4],[-r*0.7,r*0.5,-0.8],[r*0.7,r*0.5,0.8]].forEach(([x,y,a]) => {
+    c.beginPath(); c.ellipse(x,y,r*0.38,r*0.18,a,0,Math.PI*2); c.fill();
+  });
+  // Shell
+  c.fillStyle = '#065F46'; c.beginPath(); c.ellipse(0,0,r*0.65,r*0.55,0,0,Math.PI*2); c.fill();
+  // Shell pattern
+  c.strokeStyle = '#34D399'; c.lineWidth = 1.5;
+  [[0,-r*0.2],[r*0.22,r*0.1],[-r*0.22,r*0.1]].forEach(([x,y]) => {
+    c.beginPath(); c.arc(x,y,r*0.18,0,Math.PI*2); c.stroke();
+  });
+  // Head
+  c.fillStyle = '#059669'; c.beginPath(); c.ellipse(0,-r*0.75,r*0.2,r*0.17,0,0,Math.PI*2); c.fill();
+  // Eyes
+  c.fillStyle = '#1F2937';
+  c.beginPath(); c.arc(-r*0.09,-r*0.79,r*0.05,0,Math.PI*2); c.fill();
+  c.beginPath(); c.arc(r*0.09,-r*0.79,r*0.05,0,Math.PI*2); c.fill();
+  c.fillStyle = 'white';
+  c.beginPath(); c.arc(-r*0.07,-r*0.81,r*0.02,0,Math.PI*2); c.fill();
+  c.beginPath(); c.arc(r*0.11,-r*0.81,r*0.02,0,Math.PI*2); c.fill();
+}
+
+function drawDolphin(c, size) {
+  const r = size * 0.35;
+  // Tail
+  c.fillStyle = '#38BDF8';
+  c.beginPath(); c.moveTo(r*0.7,r*0.15);
+  c.quadraticCurveTo(r*1.1,0,r*1.1,-r*0.38); c.quadraticCurveTo(r*1.1,-r*0.1,r*0.85,0);
+  c.quadraticCurveTo(r*1.1,r*0.28,r*1.1,r*0.58); c.quadraticCurveTo(r*1.1,r*0.3,r*0.7,r*0.15); c.fill();
+  // Body
+  c.fillStyle = '#38BDF8';
+  c.beginPath(); c.ellipse(r*0.05,r*0.1,r*0.75,r*0.32,-0.1,0,Math.PI*2); c.fill();
+  // Belly
+  c.fillStyle = '#E0F2FE'; c.beginPath(); c.ellipse(0,r*0.18,r*0.5,r*0.18,-0.1,0,Math.PI*2); c.fill();
+  // Dorsal fin
+  c.fillStyle = '#0EA5E9';
+  c.beginPath(); c.moveTo(r*0.1,-r*0.22); c.lineTo(r*0.35,-r*0.7); c.lineTo(r*0.5,-r*0.22); c.closePath(); c.fill();
+  // Flipper
+  c.fillStyle = '#38BDF8'; c.beginPath(); c.ellipse(-r*0.1,r*0.3,r*0.28,r*0.14,0.7,0,Math.PI*2); c.fill();
+  // Snout
+  c.beginPath(); c.moveTo(-r*0.7,-r*0.02); c.quadraticCurveTo(-r*1.05,0,-r*1.05,r*0.12);
+  c.quadraticCurveTo(-r*1.05,r*0.22,-r*0.7,r*0.2); c.closePath(); c.fill();
+  // Smile
+  c.strokeStyle = '#0369A1'; c.lineWidth = 1.5;
+  c.beginPath(); c.arc(-r*0.88,r*0.08,r*0.12,0,Math.PI*0.7); c.stroke();
+  // Eye
+  c.fillStyle = '#1F2937'; c.beginPath(); c.arc(-r*0.58,-r*0.06,r*0.07,0,Math.PI*2); c.fill();
+  c.fillStyle = 'white'; c.beginPath(); c.arc(-r*0.55,-r*0.09,r*0.03,0,Math.PI*2); c.fill();
+}
+
+function drawParrot(c, size) {
+  const r = size * 0.35;
+  // Tail feathers
+  c.fillStyle = '#4ADE80';
+  c.beginPath(); c.moveTo(0,r*0.6); c.lineTo(r*0.2,r*1.15); c.lineTo(r*0.35,r*0.6); c.closePath(); c.fill();
+  c.fillStyle = '#FACC15';
+  c.beginPath(); c.moveTo(-r*0.2,r*0.6); c.lineTo(-r*0.1,r*1.0); c.lineTo(r*0.1,r*0.6); c.closePath(); c.fill();
+  // Body
+  c.fillStyle = '#22C55E'; c.beginPath(); c.ellipse(0,r*0.15,r*0.48,r*0.55,0,0,Math.PI*2); c.fill();
+  // Wing
+  c.fillStyle = '#16A34A'; c.beginPath(); c.ellipse(r*0.3,r*0.1,r*0.28,r*0.42,0.4,0,Math.PI*2); c.fill();
+  c.fillStyle = '#4ADE80'; c.beginPath(); c.ellipse(r*0.28,r*0.12,r*0.18,r*0.3,0.4,0,Math.PI*2); c.fill();
+  // Head
+  c.fillStyle = '#22C55E'; c.beginPath(); c.arc(-r*0.05,-r*0.42,r*0.32,0,Math.PI*2); c.fill();
+  // Face patch
+  c.fillStyle = '#FEF3C7'; c.beginPath(); c.ellipse(-r*0.03,-r*0.38,r*0.18,r*0.15,0,0,Math.PI*2); c.fill();
+  // Beak
+  c.fillStyle = '#FBBF24';
+  c.beginPath(); c.moveTo(-r*0.15,-r*0.42); c.lineTo(-r*0.38,-r*0.35); c.lineTo(-r*0.15,-r*0.28); c.closePath(); c.fill();
+  c.fillStyle = '#D97706'; c.beginPath(); c.arc(-r*0.38,-r*0.32,r*0.07,0,Math.PI*2); c.fill();
+  // Eye
+  c.fillStyle = '#1F2937'; c.beginPath(); c.arc(-r*0.05,-r*0.5,r*0.09,0,Math.PI*2); c.fill();
+  c.fillStyle = 'white'; c.beginPath(); c.arc(-r*0.02,-r*0.53,r*0.04,0,Math.PI*2); c.fill();
+}
+
+// ── ANIME STAMPS ──
+function drawAnimeGirl(c, size) {
+  const r = size * 0.38;
+  // Hair (back)
+  c.fillStyle = '#F9A8D4';
+  c.beginPath(); c.ellipse(0,-r*0.15,r*0.88,r*0.95,0,0,Math.PI*2); c.fill();
+  // Side hair strands
+  c.beginPath(); c.ellipse(-r*0.85,r*0.3,r*0.18,r*0.5,-0.2,0,Math.PI*2); c.fill();
+  c.beginPath(); c.ellipse(r*0.85,r*0.3,r*0.18,r*0.5,0.2,0,Math.PI*2); c.fill();
+  // Hair bangs
+  c.beginPath(); c.moveTo(-r*0.88,-r*0.05); c.quadraticCurveTo(-r*0.6,-r*1.05,0,-r*1.0);
+  c.quadraticCurveTo(r*0.6,-r*1.05,r*0.88,-r*0.05); c.fill();
+  // Face
+  c.fillStyle = '#FDDCB5'; c.beginPath(); c.ellipse(0,r*0.05,r*0.72,r*0.82,0,0,Math.PI*2); c.fill();
+  // Eyes
+  [-r*0.3, r*0.3].forEach(ex => {
+    c.fillStyle = '#DBEAFE'; c.beginPath(); c.ellipse(ex,-r*0.1,r*0.22,r*0.28,0,0,Math.PI*2); c.fill();
+    c.fillStyle = '#2563EB'; c.beginPath(); c.ellipse(ex,-r*0.08,r*0.16,r*0.22,0,0,Math.PI*2); c.fill();
+    c.fillStyle = '#1E3A8A'; c.beginPath(); c.ellipse(ex,-r*0.06,r*0.1,r*0.15,0,0,Math.PI*2); c.fill();
+    c.fillStyle = 'white';
+    c.beginPath(); c.arc(ex+r*0.08,-r*0.2,r*0.07,0,Math.PI*2); c.fill();
+    c.beginPath(); c.arc(ex-r*0.06,-r*0.01,r*0.04,0,Math.PI*2); c.fill();
+  });
+  // Eyelashes
+  c.strokeStyle = '#1E293B'; c.lineWidth = 2; c.lineCap = 'round';
+  c.beginPath(); c.moveTo(-r*0.52,-r*0.3); c.lineTo(-r*0.3,-r*0.38); c.lineTo(-r*0.08,-r*0.3); c.stroke();
+  c.beginPath(); c.moveTo(r*0.08,-r*0.3); c.lineTo(r*0.3,-r*0.38); c.lineTo(r*0.52,-r*0.3); c.stroke();
+  // Nose dot
+  c.fillStyle = '#F4A261'; c.beginPath(); c.arc(0,r*0.18,r*0.04,0,Math.PI*2); c.fill();
+  // Smile
+  c.strokeStyle = '#E07B5C'; c.lineWidth = 2;
+  c.beginPath(); c.arc(0,r*0.35,r*0.15,0.1,Math.PI-0.1); c.stroke();
+  // Blush
+  c.fillStyle = 'rgba(255,182,193,0.55)';
+  c.beginPath(); c.ellipse(-r*0.48,r*0.25,r*0.18,r*0.1,0,0,Math.PI*2); c.fill();
+  c.beginPath(); c.ellipse(r*0.48,r*0.25,r*0.18,r*0.1,0,0,Math.PI*2); c.fill();
+  // Hair bow
+  c.fillStyle = '#FB7185';
+  c.beginPath(); c.moveTo(-r*0.2,-r*0.9); c.lineTo(-r*0.5,-r*1.1); c.lineTo(-r*0.2,-r*0.78); c.lineTo(-r*0.5,-r*0.68); c.closePath(); c.fill();
+  c.beginPath(); c.moveTo(r*0.2,-r*0.9); c.lineTo(r*0.5,-r*1.1); c.lineTo(r*0.2,-r*0.78); c.lineTo(r*0.5,-r*0.68); c.closePath(); c.fill();
+  c.fillStyle = '#FEF2F2'; c.beginPath(); c.arc(-r*0.2,-r*0.88,r*0.08,0,Math.PI*2); c.fill();
+}
+
+function drawCatGirl(c, size) {
+  const r = size * 0.38;
+  // Hair (purple)
+  c.fillStyle = '#A78BFA';
+  c.beginPath(); c.ellipse(0,-r*0.15,r*0.88,r*0.95,0,0,Math.PI*2); c.fill();
+  // Cat ears
+  c.beginPath(); c.moveTo(-r*0.55,-r*0.75); c.lineTo(-r*0.75,-r*1.2); c.lineTo(-r*0.3,-r*0.85); c.closePath(); c.fill();
+  c.beginPath(); c.moveTo(r*0.55,-r*0.75); c.lineTo(r*0.75,-r*1.2); c.lineTo(r*0.3,-r*0.85); c.closePath(); c.fill();
+  c.fillStyle = '#FCA5A5'; // inner ear
+  c.beginPath(); c.moveTo(-r*0.55,-r*0.82); c.lineTo(-r*0.68,-r*1.1); c.lineTo(-r*0.38,-r*0.88); c.closePath(); c.fill();
+  c.beginPath(); c.moveTo(r*0.55,-r*0.82); c.lineTo(r*0.68,-r*1.1); c.lineTo(r*0.38,-r*0.88); c.closePath(); c.fill();
+  // Hair bangs
+  c.fillStyle = '#A78BFA';
+  c.beginPath(); c.moveTo(-r*0.88,-r*0.05); c.quadraticCurveTo(-r*0.6,-r*1.0,0,-r*0.98);
+  c.quadraticCurveTo(r*0.6,-r*1.0,r*0.88,-r*0.05); c.fill();
+  c.beginPath(); c.ellipse(-r*0.85,r*0.3,r*0.18,r*0.5,-0.2,0,Math.PI*2); c.fill();
+  c.beginPath(); c.ellipse(r*0.85,r*0.3,r*0.18,r*0.5,0.2,0,Math.PI*2); c.fill();
+  // Face
+  c.fillStyle = '#FDDCB5'; c.beginPath(); c.ellipse(0,r*0.05,r*0.72,r*0.82,0,0,Math.PI*2); c.fill();
+  // Green cat eyes
+  [-r*0.3, r*0.3].forEach(ex => {
+    c.fillStyle = '#D1FAE5'; c.beginPath(); c.ellipse(ex,-r*0.1,r*0.22,r*0.26,0,0,Math.PI*2); c.fill();
+    c.fillStyle = '#059669'; c.beginPath(); c.ellipse(ex,-r*0.08,r*0.15,r*0.2,0,0,Math.PI*2); c.fill();
+    c.fillStyle = '#1F2937'; c.beginPath(); c.ellipse(ex,-r*0.08,r*0.05,r*0.18,0,0,Math.PI*2); c.fill();
+    c.fillStyle = 'white'; c.beginPath(); c.arc(ex+r*0.07,-r*0.18,r*0.06,0,Math.PI*2); c.fill();
+  });
+  // Eyelashes
+  c.strokeStyle = '#1E293B'; c.lineWidth = 2; c.lineCap = 'round';
+  c.beginPath(); c.moveTo(-r*0.52,-r*0.3); c.lineTo(-r*0.3,-r*0.38); c.lineTo(-r*0.08,-r*0.3); c.stroke();
+  c.beginPath(); c.moveTo(r*0.08,-r*0.3); c.lineTo(r*0.3,-r*0.38); c.lineTo(r*0.52,-r*0.3); c.stroke();
+  // Cat nose
+  c.fillStyle = '#FDA4AF';
+  c.beginPath(); c.moveTo(0,r*0.14); c.lineTo(-r*0.05,r*0.2); c.lineTo(r*0.05,r*0.2); c.closePath(); c.fill();
+  // Whiskers
+  c.strokeStyle = '#9CA3AF'; c.lineWidth = 1;
+  [-1,1].forEach(s => {
+    [[r*0.08,r*0.18,s*r*0.55,r*0.1],[r*0.08,r*0.22,s*r*0.55,r*0.22],[r*0.08,r*0.26,s*r*0.55,r*0.34]].forEach(([x1,y1,x2,y2]) => {
+      c.beginPath(); c.moveTo(s*x1,y1); c.lineTo(x2,y2); c.stroke();
+    });
+  });
+  // Mouth
+  c.strokeStyle = '#E07B5C'; c.lineWidth = 2;
+  c.beginPath(); c.arc(0,r*0.34,r*0.12,0.1,Math.PI-0.1); c.stroke();
+  // Blush
+  c.fillStyle = 'rgba(255,182,193,0.5)';
+  c.beginPath(); c.ellipse(-r*0.48,r*0.22,r*0.18,r*0.1,0,0,Math.PI*2); c.fill();
+  c.beginPath(); c.ellipse(r*0.48,r*0.22,r*0.18,r*0.1,0,0,Math.PI*2); c.fill();
+}
+
+function drawSakura(c, size) {
+  const r = size * 0.42;
+  for (let i = 0; i < 5; i++) {
+    c.save(); c.rotate(i * Math.PI * 2 / 5);
+    c.fillStyle = i % 2 === 0 ? '#FCA5A5' : '#FECDD3';
+    c.beginPath(); c.ellipse(0,-r*0.42,r*0.25,r*0.4,0,0,Math.PI*2); c.fill();
+    // Petal notch
+    c.strokeStyle = '#FB7185'; c.lineWidth = 1;
+    c.beginPath(); c.moveTo(0,-r*0.18); c.lineTo(0,-r*0.75); c.stroke();
+    c.restore();
+  }
+  // Center
+  c.fillStyle = '#FBBF24'; c.beginPath(); c.arc(0,0,r*0.14,0,Math.PI*2); c.fill();
+  // Stamens
+  for (let i = 0; i < 6; i++) {
+    const a = i * Math.PI / 3;
+    c.strokeStyle = '#FCA5A5'; c.lineWidth = 1.5;
+    c.beginPath(); c.moveTo(Math.cos(a)*r*0.1,Math.sin(a)*r*0.1); c.lineTo(Math.cos(a)*r*0.25,Math.sin(a)*r*0.25); c.stroke();
+    c.fillStyle = '#FB7185'; c.beginPath(); c.arc(Math.cos(a)*r*0.27,Math.sin(a)*r*0.27,r*0.04,0,Math.PI*2); c.fill();
+  }
+}
+
+function drawMagicalBow(c, size) {
+  const r = size * 0.42;
+  // Bow wings
+  c.fillStyle = '#FB7185';
+  c.beginPath(); c.moveTo(0,0); c.quadraticCurveTo(-r*0.8,-r*0.5,-r*0.8,-r*0.05); c.quadraticCurveTo(-r*0.8,r*0.4,0,0); c.fill();
+  c.beginPath(); c.moveTo(0,0); c.quadraticCurveTo(r*0.8,-r*0.5,r*0.8,-r*0.05); c.quadraticCurveTo(r*0.8,r*0.4,0,0); c.fill();
+  // Tails
+  c.fillStyle = '#F43F5E';
+  c.beginPath(); c.moveTo(-r*0.1,r*0.05); c.lineTo(-r*0.35,r*0.8); c.lineTo(-r*0.05,r*0.55); c.closePath(); c.fill();
+  c.beginPath(); c.moveTo(r*0.1,r*0.05); c.lineTo(r*0.35,r*0.8); c.lineTo(r*0.05,r*0.55); c.closePath(); c.fill();
+  // Center gem
+  c.fillStyle = '#FBBF24'; c.beginPath(); c.arc(0,0,r*0.18,0,Math.PI*2); c.fill();
+  c.fillStyle = '#FDE68A'; c.beginPath(); c.arc(-r*0.04,-r*0.05,r*0.08,0,Math.PI*2); c.fill();
+  // Stars
+  c.fillStyle = '#FDE047';
+  [[0,-r*0.55],[r*0.55,r*0.22],[-r*0.55,r*0.22]].forEach(([x,y]) => {
+    drawStarShape(c,x,y,r*0.1,5); c.fill();
+  });
+}
+
+// ── HAWAIIAN STAMPS ──
+function drawPlumeria(c, size) {
+  const r = size * 0.42;
+  for (let i = 0; i < 5; i++) {
+    c.save(); c.rotate(i * Math.PI * 2 / 5 + 0.3);
+    c.fillStyle = ['#FFFFFF','#FEF3C7','#FDE68A','#FFFBEB','#FEF3C7'][i];
+    c.strokeStyle = '#FDE68A'; c.lineWidth = 1;
+    c.beginPath(); c.ellipse(0,-r*0.4,r*0.28,r*0.45,0,0,Math.PI*2); c.fill(); c.stroke();
+    c.restore();
+  }
+  c.fillStyle = '#FBBF24'; c.beginPath(); c.arc(0,0,r*0.2,0,Math.PI*2); c.fill();
+  c.fillStyle = '#FEF3C7'; c.beginPath(); c.arc(-r*0.05,-r*0.05,r*0.1,0,Math.PI*2); c.fill();
+}
+
+function drawHibiscus(c, size) {
+  const r = size * 0.42;
+  for (let i = 0; i < 5; i++) {
+    c.save(); c.rotate(i * Math.PI * 2 / 5);
+    c.fillStyle = ['#EF4444','#F97316','#EC4899','#EF4444','#F97316'][i];
+    c.beginPath(); c.moveTo(0,-r*0.12);
+    c.bezierCurveTo(-r*0.28,-r*0.35,-r*0.35,-r*0.7,0,-r*0.85);
+    c.bezierCurveTo(r*0.35,-r*0.7,r*0.28,-r*0.35,0,-r*0.12); c.fill();
+    c.strokeStyle = 'rgba(255,255,255,0.35)'; c.lineWidth = 1;
+    c.beginPath(); c.moveTo(0,-r*0.18); c.lineTo(0,-r*0.75); c.stroke();
+    c.restore();
+  }
+  // Stamen tube
+  c.fillStyle = '#FBBF24'; c.beginPath(); c.ellipse(0,-r*0.15,r*0.08,r*0.25,0,0,Math.PI*2); c.fill();
+  for (let i = 0; i < 5; i++) {
+    const a = i * Math.PI * 2 / 5 - Math.PI/2;
+    const px = Math.cos(a)*r*0.22, py = Math.sin(a)*r*0.22 - r*0.1;
+    c.strokeStyle = '#FBBF24'; c.lineWidth = 1.5;
+    c.beginPath(); c.moveTo(0,-r*0.1); c.lineTo(px,py); c.stroke();
+    c.fillStyle = '#D97706'; c.beginPath(); c.arc(px,py,r*0.05,0,Math.PI*2); c.fill();
+  }
+  c.fillStyle = '#DC2626'; c.beginPath(); c.arc(0,0,r*0.1,0,Math.PI*2); c.fill();
+}
+
+function drawPalmTree(c, size) {
+  const r = size * 0.42;
+  // Trunk
+  c.strokeStyle = '#92400E'; c.lineWidth = r*0.22; c.lineCap = 'round';
+  c.beginPath(); c.moveTo(r*0.05,r*1.0); c.quadraticCurveTo(r*0.15,r*0.3,-r*0.05,-r*0.5); c.stroke();
+  // Trunk texture
+  c.strokeStyle = '#78350F'; c.lineWidth = 1;
+  for (let i = 0; i < 5; i++) {
+    const y = r*1.0 + (-r*1.5)*i/5;
+    const x = r*0.05 + r*0.08*i/5 - r*0.08*(i/5)*(i/5);
+    c.beginPath(); c.moveTo(x-r*0.11,y); c.lineTo(x+r*0.09,y); c.stroke();
+  }
+  // Fronds
+  [[-1.1,-0.4],[-0.5,-0.8],[0.2,-0.92],[0.9,-0.62],[0.6,-0.18],[-0.3,-0.12]].forEach(([fx,fy]) => {
+    c.strokeStyle = '#16A34A'; c.lineWidth = r*0.1; c.lineCap = 'round';
+    c.beginPath(); c.moveTo(-r*0.05,-r*0.5); c.quadraticCurveTo(fx*r*0.5,fy*r,fx*r,fy*r); c.stroke();
+    c.strokeStyle = '#4ADE80'; c.lineWidth = r*0.05;
+    c.beginPath(); c.moveTo(-r*0.05+fx*r*0.3,-r*0.5+fy*r*0.45);
+    c.quadraticCurveTo(fx*r*0.45+fy*r*0.2,fy*r*0.55,fx*r*0.5+fy*r*0.32,fy*r*0.68); c.stroke();
+  });
+  // Coconuts
+  c.fillStyle = '#78350F';
+  c.beginPath(); c.arc(-r*0.1,-r*0.55,r*0.1,0,Math.PI*2); c.fill();
+  c.beginPath(); c.arc(r*0.05,-r*0.58,r*0.09,0,Math.PI*2); c.fill();
+}
+
+function drawPineapple(c, size) {
+  const r = size * 0.38;
+  // Body
+  c.fillStyle = '#FBBF24';
+  c.beginPath(); c.ellipse(0,r*0.15,r*0.52,r*0.72,0,0,Math.PI*2); c.fill();
+  // Diamond grid
+  c.save();
+  c.beginPath(); c.ellipse(0,r*0.15,r*0.52,r*0.72,0,0,Math.PI*2); c.clip();
+  c.strokeStyle = '#D97706'; c.lineWidth = 1.5;
+  for (let i = -3; i <= 3; i++) {
+    c.beginPath(); c.moveTo(i*r*0.22-r*0.6,-r*0.5); c.lineTo(i*r*0.22+r*0.6,r*0.9); c.stroke();
+    c.beginPath(); c.moveTo(i*r*0.22+r*0.6,-r*0.5); c.lineTo(i*r*0.22-r*0.6,r*0.9); c.stroke();
+  }
+  c.restore();
+  // Outline
+  c.strokeStyle = '#B45309'; c.lineWidth = 2;
+  c.beginPath(); c.ellipse(0,r*0.15,r*0.52,r*0.72,0,0,Math.PI*2); c.stroke();
+  // Crown leaves
+  [[-r*0.3,-r*0.9],[-r*0.1,-r*1.1],[r*0.15,-r*1.05],[r*0.35,-r*0.85]].forEach(([lx,ly]) => {
+    c.fillStyle = '#16A34A';
+    c.beginPath(); c.moveTo(0,-r*0.52); c.quadraticCurveTo(lx*0.5,ly*0.5-r*0.1,lx,ly);
+    c.quadraticCurveTo(lx*0.3,ly*0.4,0,-r*0.52); c.fill();
+  });
+}
+
+function drawWave(c, size) {
+  const r = size * 0.42;
+  // Seafoam base
+  c.fillStyle = '#0EA5E9';
+  c.beginPath(); c.moveTo(-r,r*0.5); c.quadraticCurveTo(-r*0.5,r*0.7,0,r*0.5);
+  c.quadraticCurveTo(r*0.5,r*0.3,r,r*0.5); c.lineTo(r,r); c.lineTo(-r,r); c.closePath(); c.fill();
+  // Wave body
+  c.fillStyle = '#0EA5E9';
+  c.beginPath(); c.moveTo(-r,r*0.5);
+  c.quadraticCurveTo(-r*0.5,-r*0.8,r*0.2,-r*0.6);
+  c.quadraticCurveTo(r*0.8,-r*0.4,r*0.7,r*0.1);
+  c.quadraticCurveTo(r*0.5,r*0.5,r*0.1,r*0.3);
+  c.quadraticCurveTo(-r*0.2,r*0.1,-r*0.4,r*0.5); c.closePath(); c.fill();
+  // Inner lighter curl
+  c.fillStyle = '#38BDF8';
+  c.beginPath(); c.moveTo(-r*0.4,r*0.5);
+  c.quadraticCurveTo(-r*0.1,-r*0.3,r*0.3,-r*0.2);
+  c.quadraticCurveTo(r*0.6,-r*0.1,r*0.55,r*0.25);
+  c.quadraticCurveTo(r*0.35,r*0.5,r*0.1,r*0.4); c.closePath(); c.fill();
+  // White foam cap
+  c.fillStyle = '#E0F2FE'; c.beginPath(); c.arc(r*0.2,-r*0.5,r*0.25,0,Math.PI); c.fill();
+  // Spray dots
+  c.fillStyle = '#BAE6FD';
+  [[r*0.5,-r*0.6],[r*0.7,-r*0.35],[r*0.42,-r*0.72]].forEach(([x,y]) => {
+    c.beginPath(); c.arc(x,y,r*0.05,0,Math.PI*2); c.fill();
+  });
+}
+
+function drawGecko(c, size) {
+  const r = size * 0.38;
+  // Tail
+  c.strokeStyle = '#4ADE80'; c.lineWidth = r*0.22; c.lineCap = 'round';
+  c.beginPath(); c.moveTo(r*0.15,r*0.4); c.quadraticCurveTo(r*0.8,r*0.7,r*0.9,r*1.1); c.stroke();
+  // Body
+  c.fillStyle = '#4ADE80'; c.beginPath(); c.ellipse(0,r*0.1,r*0.35,r*0.55,0,0,Math.PI*2); c.fill();
+  // Belly
+  c.fillStyle = '#A7F3D0'; c.beginPath(); c.ellipse(0,r*0.12,r*0.2,r*0.38,0,0,Math.PI*2); c.fill();
+  // Spots
+  c.fillStyle = '#16A34A';
+  [[0,-r*0.05],[r*0.15,r*0.2],[-r*0.15,r*0.2],[0,r*0.4]].forEach(([x,y]) => {
+    c.beginPath(); c.arc(x,y,r*0.07,0,Math.PI*2); c.fill();
+  });
+  // Legs (4)
+  c.strokeStyle = '#22C55E'; c.lineWidth = r*0.15; c.lineCap = 'round';
+  [[-r*0.35,-r*0.15,-r*0.75,-r*0.4],[r*0.35,-r*0.15,r*0.75,-r*0.4],
+   [-r*0.35,r*0.35,-r*0.75,r*0.6],[r*0.35,r*0.35,r*0.75,r*0.6]].forEach(([x1,y1,x2,y2]) => {
+    c.beginPath(); c.moveTo(x1,y1); c.lineTo(x2,y2); c.stroke();
+    c.fillStyle = '#A7F3D0'; c.beginPath(); c.arc(x2,y2,r*0.1,0,Math.PI*2); c.fill();
+  });
+  // Head
+  c.fillStyle = '#4ADE80'; c.beginPath(); c.ellipse(0,-r*0.58,r*0.28,r*0.25,0,0,Math.PI*2); c.fill();
+  // Eyes
+  c.fillStyle = '#FDE047';
+  c.beginPath(); c.arc(-r*0.13,-r*0.62,r*0.1,0,Math.PI*2); c.fill();
+  c.beginPath(); c.arc(r*0.13,-r*0.62,r*0.1,0,Math.PI*2); c.fill();
+  c.fillStyle = '#1F2937';
+  c.beginPath(); c.arc(-r*0.13,-r*0.62,r*0.05,0,Math.PI*2); c.fill();
+  c.beginPath(); c.arc(r*0.13,-r*0.62,r*0.05,0,Math.PI*2); c.fill();
+  c.fillStyle = 'white';
+  c.beginPath(); c.arc(-r*0.1,-r*0.65,r*0.025,0,Math.PI*2); c.fill();
+  c.beginPath(); c.arc(r*0.16,-r*0.65,r*0.025,0,Math.PI*2); c.fill();
+  // Smile
+  c.strokeStyle = '#166534'; c.lineWidth = 1.5;
+  c.beginPath(); c.arc(0,-r*0.52,r*0.12,0.1,Math.PI-0.1); c.stroke();
+}
+
+function drawShaka(c, size) {
+  const r = size * 0.42;
+  // Palm
+  c.fillStyle = '#FDDCB5'; c.strokeStyle = '#F4A261'; c.lineWidth = 1.5;
+  c.beginPath(); c.ellipse(0,r*0.1,r*0.38,r*0.5,0,0,Math.PI*2); c.fill(); c.stroke();
+  // Curled middle fingers
+  c.fillStyle = '#FDDCB5';
+  [[-r*0.18,-r*0.15],[0,-r*0.15],[r*0.18,-r*0.15]].forEach(([fx,fy]) => {
+    c.beginPath(); c.arc(fx,fy,r*0.12,0,Math.PI*2); c.fill(); c.stroke();
+  });
+  // Thumb (extended left-down)
+  c.beginPath(); c.ellipse(-r*0.52,r*0.22,r*0.16,r*0.35,-0.5,0,Math.PI*2); c.fill(); c.stroke();
+  // Pinky (extended up-right)
+  c.beginPath(); c.ellipse(r*0.42,-r*0.42,r*0.13,r*0.32,0.3,0,Math.PI*2); c.fill(); c.stroke();
+  // Wrist line
+  c.beginPath(); c.moveTo(-r*0.38,r*0.52); c.lineTo(r*0.38,r*0.52); c.stroke();
+}
+
+function drawUkuleleStamp(c, size) {
+  const r = size * 0.42;
+  // Body — lower bout
+  c.fillStyle = '#92400E'; c.strokeStyle = '#78350F'; c.lineWidth = 2;
+  c.beginPath(); c.arc(0,r*0.45,r*0.4,0,Math.PI*2); c.fill(); c.stroke();
+  // Upper bout
+  c.fillStyle = '#A16207';
+  c.beginPath(); c.arc(0,-r*0.1,r*0.3,0,Math.PI*2); c.fill(); c.stroke();
+  // Sound hole
+  c.fillStyle = '#451A03'; c.beginPath(); c.arc(0,r*0.38,r*0.12,0,Math.PI*2); c.fill();
+  c.strokeStyle = '#92400E'; c.lineWidth = 1.5; c.beginPath(); c.arc(0,r*0.38,r*0.15,0,Math.PI*2); c.stroke();
+  // Neck
+  c.fillStyle = '#78350F'; c.beginPath(); c.rect(-r*0.07,-r*0.38,r*0.14,r*0.32); c.fill();
+  c.fillStyle = '#3F1505'; c.beginPath(); c.rect(-r*0.055,-r*0.37,r*0.11,r*0.3); c.fill();
+  // Frets
+  c.strokeStyle = '#C0A46A'; c.lineWidth = 1;
+  [-r*0.24,-r*0.17,-r*0.1].forEach(y => {
+    c.beginPath(); c.moveTo(-r*0.055,y); c.lineTo(r*0.055,y); c.stroke();
+  });
+  // Headstock
+  c.fillStyle = '#78350F';
+  c.beginPath(); c.roundRect(-r*0.12,-r*0.92,r*0.24,r*0.35,r*0.05); c.fill();
+  // Tuning pegs
+  c.fillStyle = '#C0A46A';
+  [[-r*0.14,-r*0.78],[-r*0.14,-r*0.65],[r*0.14,-r*0.78],[r*0.14,-r*0.65]].forEach(([px,py]) => {
+    c.beginPath(); c.arc(px,py,r*0.05,0,Math.PI*2); c.fill();
+  });
+  // Strings
+  c.strokeStyle = '#FEF3C7'; c.lineWidth = 0.8;
+  [-r*0.04,-r*0.013,r*0.013,r*0.04].forEach(x => {
+    c.beginPath(); c.moveTo(x,-r*0.58); c.lineTo(x,r*0.82); c.stroke();
   });
 }
 
