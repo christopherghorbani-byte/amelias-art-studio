@@ -369,6 +369,45 @@
     z-index: 300;
     display: none;
   }
+
+  /* ── ZOOM BADGE ── */
+  #zoom-badge {
+    position: absolute;
+    bottom: 10px; right: 10px;
+    display: none;
+    align-items: center; gap: 6px;
+    background: rgba(88,28,135,0.85);
+    border-radius: 20px;
+    padding: 6px 10px;
+    z-index: 50;
+    pointer-events: auto;
+    backdrop-filter: blur(4px);
+  }
+  #zoom-badge.visible { display: flex; }
+  #zoom-level {
+    color: white; font-size: 13px; font-weight: bold;
+    font-family: 'Comic Sans MS', cursive;
+    min-width: 28px; text-align: center;
+  }
+  #zoom-reset {
+    color: white; font-size: 14px;
+    cursor: pointer; padding: 2px 4px;
+    border-radius: 6px;
+    background: rgba(255,255,255,0.2);
+  }
+  #zoom-reset:active { transform: scale(0.85); }
+  .zoom-tool-btn {
+    background: #EDE9FE;
+    border: 2px solid var(--purple);
+    border-radius: 10px;
+    font-size: 15px;
+    width: 40px; height: 40px;
+    min-width: 40px;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer; flex-shrink: 0;
+    font-weight: bold; color: var(--purple);
+  }
+  .zoom-tool-btn:active { transform: scale(0.88); background: #DDD6FE; }
 </style>
 </head>
 <body>
@@ -387,6 +426,10 @@
   <div id="canvas-wrap">
     <canvas id="main-canvas"></canvas>
     <canvas id="overlay-canvas"></canvas>
+    <div id="zoom-badge">
+      <span id="zoom-level">1×</span>
+      <span id="zoom-reset">✕ Reset</span>
+    </div>
   </div>
 
   <!-- Size bar (shows for pencil/eraser) -->
@@ -407,6 +450,8 @@
     <div class="tool-btn" id="btn-stamps" title="Stamps">🦄</div>
     <div class="tool-btn" id="btn-anim" title="Animation">🎬</div>
     <div class="tool-btn" id="btn-music" title="Music">🎵</div>
+    <div class="zoom-tool-btn" id="btn-zoom-in" title="Zoom In">🔍+</div>
+    <div class="zoom-tool-btn" id="btn-zoom-out" title="Zoom Out">🔍−</div>
   </div>
 
   <!-- Color bar -->
@@ -510,6 +555,13 @@ let frames = []; // array of ImageData
 let seqData = Array.from({length: SEQ_ROWS}, () => Array(SEQ_COLS).fill(false));
 let audioCtx = null;
 
+// Zoom / pan state
+let zoom = 1;
+let panX = 0, panY = 0;
+const MIN_ZOOM = 1, MAX_ZOOM = 8;
+const activePointers = new Map(); // pointerId → {x, y}
+let panStartX = 0, panStartY = 0;
+
 // ═══════════════════════════════════════════════════════════
 // CANVAS SETUP
 // ═══════════════════════════════════════════════════════════
@@ -551,6 +603,79 @@ function resizeCanvas() {
 }
 resizeCanvas();
 window.addEventListener('resize', resizeCanvas);
+
+// ═══════════════════════════════════════════════════════════
+// ZOOM & PAN
+// ═══════════════════════════════════════════════════════════
+function applyTransform() {
+  const t = `translate(${panX}px, ${panY}px) scale(${zoom})`;
+  mainCanvas.style.transform = t;
+  mainCanvas.style.transformOrigin = 'top left';
+  overlayCanvas.style.transform = t;
+  overlayCanvas.style.transformOrigin = 'top left';
+}
+
+function clampPan() {
+  const w = wrap.clientWidth;
+  const h = wrap.clientHeight;
+  panX = Math.max(w - w * zoom, Math.min(0, panX));
+  panY = Math.max(h - h * zoom, Math.min(0, panY));
+}
+
+function changeZoom(newZoom, pivotX, pivotY) {
+  // Zoom around the given pivot point (screen coords relative to wrap)
+  const w = wrap.clientWidth;
+  const h = wrap.clientHeight;
+  const px = pivotX !== undefined ? pivotX : w / 2;
+  const py = pivotY !== undefined ? pivotY : h / 2;
+  const ratio = newZoom / zoom;
+  panX = px - (px - panX) * ratio;
+  panY = py - (py - panY) * ratio;
+  zoom = newZoom;
+  if (zoom <= 1) { zoom = 1; panX = 0; panY = 0; }
+  else clampPan();
+  applyTransform();
+  updateZoomBadge();
+}
+
+function updateZoomBadge() {
+  const badge = document.getElementById('zoom-badge');
+  const level = document.getElementById('zoom-level');
+  if (zoom > 1) {
+    badge.classList.add('visible');
+    level.textContent = Math.round(zoom) + '×';
+  } else {
+    badge.classList.remove('visible');
+  }
+}
+
+document.getElementById('btn-zoom-in').addEventListener('pointerdown', e => {
+  e.stopPropagation();
+  changeZoom(Math.min(MAX_ZOOM, zoom * 2));
+});
+document.getElementById('btn-zoom-out').addEventListener('pointerdown', e => {
+  e.stopPropagation();
+  changeZoom(Math.max(MIN_ZOOM, zoom / 2));
+});
+document.getElementById('zoom-reset').addEventListener('pointerdown', e => {
+  e.stopPropagation();
+  changeZoom(1);
+});
+
+// ── Block ALL browser-level zoom on iOS ──
+// iOS ignores user-scalable=no since iOS 10; we must block it in JS.
+document.addEventListener('gesturestart',  e => e.preventDefault(), { passive: false });
+document.addEventListener('gesturechange', e => e.preventDefault(), { passive: false });
+document.addEventListener('gestureend',    e => e.preventDefault(), { passive: false });
+// Block double-tap zoom (stylus quick taps fire this)
+let lastTapTime = 0;
+document.addEventListener('touchend', e => {
+  const now = Date.now();
+  if (now - lastTapTime < 300) e.preventDefault();
+  lastTapTime = now;
+}, { passive: false });
+// Block ctrl+wheel zoom (desktop/trackpad)
+document.addEventListener('wheel', e => { if (e.ctrlKey) e.preventDefault(); }, { passive: false });
 
 // ═══════════════════════════════════════════════════════════
 // AUDIO
@@ -760,18 +885,36 @@ overlayCanvas.addEventListener('pointercancel', onPointerUp);
 overlayCanvas.addEventListener('contextmenu', e => e.preventDefault());
 
 function getPos(e) {
-  const rect = mainCanvas.getBoundingClientRect();
+  // getBoundingClientRect already accounts for CSS transform (pan + zoom),
+  // so dividing by zoom converts from visual pixels to canvas logical pixels.
+  const rect = overlayCanvas.getBoundingClientRect();
   return {
-    x: (e.clientX - rect.left),
-    y: (e.clientY - rect.top)
+    x: (e.clientX - rect.left) / zoom,
+    y: (e.clientY - rect.top)  / zoom
   };
 }
 
 let sfxThrottle = 0;
 function onPointerDown(e) {
   e.preventDefault();
+  getAudio();
+
+  activePointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+
+  if (activePointers.size >= 2) {
+    // Second finger appeared — cancel any in-progress stroke, switch to pan
+    if (isDrawing) {
+      isDrawing = false;
+      undoStack.pop(); // discard the undo entry for the cancelled stroke
+      octx.clearRect(0, 0, overlayCanvas.width, overlayCanvas.height);
+      ctx.putImageData(undoStack[undoStack.length - 1] ||
+        ctx.getImageData(0, 0, mainCanvas.width, mainCanvas.height), 0, 0);
+    }
+    return;
+  }
+
+  // Single pointer — draw
   overlayCanvas.setPointerCapture(e.pointerId);
-  getAudio(); // unlock audio context on user gesture
   const pos = getPos(e);
   isDrawing = true;
   startX = lastX = pos.x;
@@ -799,13 +942,23 @@ function onPointerDown(e) {
 
 function onPointerMove(e) {
   e.preventDefault();
+
+  const prev = activePointers.get(e.pointerId);
+  activePointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+
+  // Two-finger pan (only moves canvas when zoomed in)
+  if (activePointers.size >= 2 && zoom > 1 && prev) {
+    const dx = e.clientX - prev.x;
+    const dy = e.clientY - prev.y;
+    panX += dx;
+    panY += dy;
+    clampPan();
+    applyTransform();
+    return;
+  }
+
   if (!isDrawing) return;
   const pos = getPos(e);
-
-  // Cursor dot
-  const dot = document.getElementById('cursor-dot');
-  dot.style.left = e.clientX + 'px';
-  dot.style.top = e.clientY + 'px';
 
   if (currentTool === 'pencil' || currentTool === 'eraser') {
     drawLine(lastX, lastY, pos.x, pos.y);
@@ -822,6 +975,8 @@ function onPointerMove(e) {
 }
 
 function onPointerUp(e) {
+  activePointers.delete(e.pointerId);
+
   if (!isDrawing) return;
   isDrawing = false;
   const pos = getPos(e);
