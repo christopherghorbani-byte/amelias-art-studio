@@ -1,0 +1,1583 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>🎨 Amelia's Art Studio</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --pink: #FF6EB4;
+    --purple: #A855F7;
+    --blue: #38BDF8;
+    --orange: #FB923C;
+    --yellow: #FACC15;
+    --green: #4ADE80;
+    --teal: #2DD4BF;
+    --white: #FFFFFF;
+    --bg: #FDF4FF;
+    --panel: #FAE8FF;
+    --border: #E879F9;
+    --shadow: rgba(168,85,247,0.25);
+    --text: #5B21B6;
+    --btn-h: 52px;
+  }
+
+  html, body {
+    width: 100%; height: 100%;
+    overflow: hidden;
+    background: var(--bg);
+    font-family: 'Comic Sans MS', 'Chalkboard SE', cursive;
+    touch-action: none;
+    -webkit-tap-highlight-color: transparent;
+    -webkit-user-select: none;
+    user-select: none;
+  }
+
+  #app {
+    display: flex;
+    flex-direction: column;
+    width: 100%; height: 100%;
+    position: fixed; inset: 0;
+  }
+
+  /* ── HEADER ── */
+  #header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 6px 10px;
+    background: linear-gradient(135deg, var(--pink), var(--purple));
+    box-shadow: 0 2px 8px var(--shadow);
+    flex-shrink: 0;
+    height: 50px;
+  }
+  #header h1 {
+    color: white; font-size: 15px; font-weight: bold;
+    text-shadow: 1px 1px 0 rgba(0,0,0,0.3);
+    letter-spacing: 0.5px;
+  }
+  .hbtn {
+    background: rgba(255,255,255,0.25);
+    border: 2px solid rgba(255,255,255,0.5);
+    border-radius: 10px;
+    color: white; font-size: 18px;
+    width: 36px; height: 36px;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer; flex-shrink: 0;
+  }
+  .hbtn:active { transform: scale(0.9); }
+  #header-right { display: flex; gap: 6px; }
+
+  /* ── CANVAS AREA ── */
+  #canvas-wrap {
+    flex: 1; position: relative; overflow: hidden;
+    background: #fff;
+  }
+  #main-canvas, #overlay-canvas {
+    position: absolute; top: 0; left: 0;
+    width: 100%; height: 100%;
+    touch-action: none;
+  }
+  #overlay-canvas { pointer-events: none; }
+
+  /* ── TOOL BAR ── */
+  #toolbar {
+    display: flex; align-items: center; justify-content: space-around;
+    padding: 4px 6px;
+    background: var(--panel);
+    border-top: 2px solid var(--border);
+    flex-shrink: 0;
+    height: 58px;
+    gap: 4px;
+  }
+  .tool-btn {
+    background: white;
+    border: 2px solid #DDD;
+    border-radius: 12px;
+    font-size: 20px;
+    width: 46px; height: 46px;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer; flex-shrink: 0;
+    transition: transform 0.1s, border-color 0.1s;
+  }
+  .tool-btn.active {
+    border-color: var(--purple);
+    background: #F3E8FF;
+    box-shadow: 0 0 0 2px var(--purple);
+  }
+  .tool-btn:active { transform: scale(0.88); }
+
+  /* ── COLOR BAR ── */
+  #colorbar {
+    display: flex; align-items: center;
+    padding: 5px 8px;
+    background: var(--panel);
+    border-top: 2px solid var(--border);
+    flex-shrink: 0;
+    height: 54px;
+    gap: 5px;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  #colorbar::-webkit-scrollbar { display: none; }
+  .swatch {
+    width: 38px; height: 38px;
+    border-radius: 50%;
+    border: 3px solid transparent;
+    flex-shrink: 0;
+    cursor: pointer;
+    transition: transform 0.1s, border-color 0.1s;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+  }
+  .swatch.active { border-color: #222; transform: scale(1.2); }
+  .swatch:active { transform: scale(0.88); }
+  #custom-color-btn {
+    width: 38px; height: 38px;
+    border-radius: 50%;
+    border: 3px dashed #AAA;
+    background: conic-gradient(red, yellow, lime, cyan, blue, magenta, red);
+    flex-shrink: 0;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px;
+  }
+  #color-input { display: none; }
+
+  /* ── BRUSH SIZE SLIDER ── */
+  #size-bar {
+    display: none;
+    align-items: center; gap: 8px;
+    padding: 4px 12px;
+    background: var(--panel);
+    border-top: 1px solid var(--border);
+    flex-shrink: 0;
+    height: 42px;
+  }
+  #size-bar.visible { display: flex; }
+  #size-bar label { font-size: 12px; color: var(--text); white-space: nowrap; }
+  #size-slider { flex: 1; accent-color: var(--purple); }
+  #size-preview {
+    width: 24px; height: 24px;
+    display: flex; align-items: center; justify-content: center;
+  }
+  #size-dot { background: #333; border-radius: 50%; }
+
+  /* ── SLIDE-UP PANELS ── */
+  .panel {
+    position: fixed;
+    bottom: 0; left: 0; right: 0;
+    background: var(--panel);
+    border-top: 3px solid var(--border);
+    border-radius: 20px 20px 0 0;
+    box-shadow: 0 -4px 20px var(--shadow);
+    transform: translateY(100%);
+    transition: transform 0.3s cubic-bezier(0.34,1.56,0.64,1);
+    z-index: 100;
+    max-height: 70vh;
+    display: flex; flex-direction: column;
+  }
+  .panel.open { transform: translateY(0); }
+  .panel-handle {
+    width: 40px; height: 5px;
+    background: var(--border);
+    border-radius: 3px;
+    margin: 10px auto 6px;
+    flex-shrink: 0;
+  }
+  .panel-title {
+    text-align: center; font-size: 14px; font-weight: bold;
+    color: var(--text); margin-bottom: 8px;
+    flex-shrink: 0;
+  }
+  .panel-close {
+    position: absolute; top: 10px; right: 14px;
+    font-size: 20px; cursor: pointer; color: var(--purple);
+  }
+  .panel-scroll {
+    overflow-y: auto; overflow-x: hidden;
+    flex: 1; padding: 0 10px 16px;
+    scrollbar-width: thin;
+  }
+
+  /* ── STAMP PANEL ── */
+  #stamp-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 8px;
+    padding: 4px;
+  }
+  .stamp-btn {
+    aspect-ratio: 1;
+    background: white;
+    border: 2px solid #DDD;
+    border-radius: 12px;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    cursor: pointer; gap: 2px;
+    padding: 4px;
+  }
+  .stamp-btn canvas { width: 48px; height: 48px; }
+  .stamp-btn span { font-size: 9px; color: #777; text-align: center; line-height: 1.1; }
+  .stamp-btn.selected { border-color: var(--purple); background: #F3E8FF; }
+  .stamp-btn:active { transform: scale(0.88); }
+
+  /* ── ANIMATION PANEL ── */
+  #anim-panel .panel-scroll { padding-bottom: 8px; }
+  #frame-controls {
+    display: flex; align-items: center; gap: 8px;
+    padding: 8px 10px;
+    flex-shrink: 0;
+  }
+  #frame-controls button {
+    background: var(--purple); color: white;
+    border: none; border-radius: 10px;
+    padding: 8px 14px; font-size: 14px;
+    cursor: pointer; font-family: inherit;
+  }
+  #frame-controls button:active { transform: scale(0.9); }
+  #fps-label { font-size: 12px; color: var(--text); }
+  #fps-slider { flex: 1; accent-color: var(--purple); }
+  #onion-toggle {
+    background: #EEE; border: 2px solid #CCC;
+    border-radius: 8px; padding: 6px 10px;
+    font-size: 12px; color: #555;
+    cursor: pointer;
+  }
+  #onion-toggle.on { background: #F3E8FF; border-color: var(--purple); color: var(--purple); }
+  #frame-strip {
+    display: flex; gap: 8px;
+    padding: 6px 10px 10px;
+    overflow-x: auto;
+    flex-shrink: 0;
+    scrollbar-width: none;
+  }
+  #frame-strip::-webkit-scrollbar { display: none; }
+  .frame-thumb {
+    flex-shrink: 0;
+    width: 70px; height: 70px;
+    border: 3px solid #DDD;
+    border-radius: 10px;
+    cursor: pointer;
+    position: relative;
+    background: white;
+    overflow: hidden;
+  }
+  .frame-thumb.active { border-color: var(--purple); }
+  .frame-thumb canvas { width: 100%; height: 100%; display: block; }
+  .frame-thumb .frame-num {
+    position: absolute; bottom: 2px; right: 5px;
+    font-size: 10px; color: var(--purple); font-weight: bold;
+  }
+  .frame-add {
+    flex-shrink: 0;
+    width: 70px; height: 70px;
+    border: 3px dashed #CCC;
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 28px; color: #AAA;
+    cursor: pointer;
+    background: white;
+  }
+
+  /* ── MUSIC PANEL ── */
+  #music-panel { max-height: 75vh; }
+  #seq-controls {
+    display: flex; align-items: center; gap: 8px;
+    padding: 6px 10px;
+    flex-shrink: 0;
+    flex-wrap: wrap;
+  }
+  #seq-controls button {
+    background: var(--purple); color: white;
+    border: none; border-radius: 10px;
+    padding: 8px 14px; font-size: 14px;
+    cursor: pointer; font-family: inherit;
+  }
+  #seq-controls button:active { transform: scale(0.9); }
+  #tempo-label { font-size: 12px; color: var(--text); }
+  #tempo-slider { flex: 1; min-width: 80px; accent-color: var(--purple); }
+  #instrument-select {
+    background: white; border: 2px solid var(--border);
+    border-radius: 8px; padding: 5px 8px;
+    font-family: inherit; font-size: 12px; color: var(--text);
+    cursor: pointer;
+  }
+  #seq-grid-wrap {
+    overflow-x: auto; overflow-y: hidden;
+    padding: 0 10px 10px;
+    flex-shrink: 0;
+  }
+  #seq-grid {
+    display: grid;
+    gap: 3px;
+    width: max-content;
+  }
+  .seq-row-label {
+    font-size: 11px; color: var(--text); text-align: right;
+    padding-right: 4px;
+    display: flex; align-items: center; justify-content: flex-end;
+  }
+  .seq-cell {
+    width: 28px; height: 28px;
+    border-radius: 6px;
+    border: 2px solid #DDD;
+    background: white;
+    cursor: pointer;
+    transition: background 0.1s;
+  }
+  .seq-cell.on { background: var(--purple); border-color: var(--purple); }
+  .seq-cell.playing { background: var(--yellow); border-color: var(--yellow); }
+  .seq-cell:active { transform: scale(0.85); }
+
+  /* ── OVERLAYS ── */
+  #backdrop {
+    display: none;
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.3);
+    z-index: 99;
+  }
+  #backdrop.visible { display: block; }
+
+  /* ── TOAST ── */
+  #toast {
+    position: fixed; top: 60px; left: 50%; transform: translateX(-50%) translateY(-20px);
+    background: var(--purple); color: white;
+    padding: 10px 20px; border-radius: 20px;
+    font-size: 14px; font-weight: bold;
+    opacity: 0; transition: opacity 0.3s, transform 0.3s;
+    z-index: 200; pointer-events: none; white-space: nowrap;
+  }
+  #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+  /* ── CURSOR DOT ── */
+  #cursor-dot {
+    position: fixed;
+    width: 12px; height: 12px;
+    border-radius: 50%;
+    background: rgba(168,85,247,0.5);
+    border: 2px solid var(--purple);
+    pointer-events: none;
+    transform: translate(-50%, -50%);
+    z-index: 300;
+    display: none;
+  }
+</style>
+</head>
+<body>
+<div id="app">
+  <!-- Header -->
+  <div id="header">
+    <h1>🎨 Amelia's Art Studio</h1>
+    <div id="header-right">
+      <div class="hbtn" id="btn-undo" title="Undo">↩️</div>
+      <div class="hbtn" id="btn-clear" title="Clear">🗑️</div>
+      <div class="hbtn" id="btn-share" title="Share">📤</div>
+    </div>
+  </div>
+
+  <!-- Canvas -->
+  <div id="canvas-wrap">
+    <canvas id="main-canvas"></canvas>
+    <canvas id="overlay-canvas"></canvas>
+  </div>
+
+  <!-- Size bar (shows for pencil/eraser) -->
+  <div id="size-bar">
+    <label>Size</label>
+    <input type="range" id="size-slider" min="1" max="40" value="6">
+    <div id="size-preview"><div id="size-dot"></div></div>
+  </div>
+
+  <!-- Tool bar -->
+  <div id="toolbar">
+    <div class="tool-btn active" data-tool="pencil" title="Pencil">✏️</div>
+    <div class="tool-btn" data-tool="eraser" title="Eraser">🧹</div>
+    <div class="tool-btn" data-tool="fill" title="Fill">🪣</div>
+    <div class="tool-btn" data-tool="line" title="Line">📏</div>
+    <div class="tool-btn" data-tool="rect" title="Rectangle">⬜</div>
+    <div class="tool-btn" data-tool="circle" title="Circle">⭕</div>
+    <div class="tool-btn" id="btn-stamps" title="Stamps">🦄</div>
+    <div class="tool-btn" id="btn-anim" title="Animation">🎬</div>
+    <div class="tool-btn" id="btn-music" title="Music">🎵</div>
+  </div>
+
+  <!-- Color bar -->
+  <div id="colorbar">
+    <div id="custom-color-btn" title="More colors">+</div>
+    <input type="color" id="color-input" value="#FF6EB4">
+  </div>
+
+  <!-- Backdrop -->
+  <div id="backdrop"></div>
+
+  <!-- Stamp Panel -->
+  <div class="panel" id="stamp-panel">
+    <div class="panel-handle"></div>
+    <div class="panel-title">✨ Stamps</div>
+    <div class="panel-close" id="stamp-close">✕</div>
+    <div class="panel-scroll">
+      <div id="stamp-grid"></div>
+    </div>
+  </div>
+
+  <!-- Animation Panel -->
+  <div class="panel" id="anim-panel">
+    <div class="panel-handle"></div>
+    <div class="panel-title">🎬 Animation</div>
+    <div class="panel-close" id="anim-close">✕</div>
+    <div id="frame-controls">
+      <button id="btn-play-anim">▶ Play</button>
+      <button id="btn-stop-anim" style="background:#EEE;color:#555">■ Stop</button>
+      <span id="onion-toggle">👻 Onion</span>
+      <span id="fps-label">Speed</span>
+      <input type="range" id="fps-slider" min="1" max="12" value="4">
+    </div>
+    <div id="frame-strip"></div>
+  </div>
+
+  <!-- Music Panel -->
+  <div class="panel" id="music-panel">
+    <div class="panel-handle"></div>
+    <div class="panel-title">🎵 Music Maker</div>
+    <div class="panel-close" id="music-close">✕</div>
+    <div id="seq-controls">
+      <button id="btn-play-seq">▶ Play</button>
+      <button id="btn-stop-seq" style="background:#EEE;color:#555">■ Stop</button>
+      <select id="instrument-select">
+        <option value="bell">🔔 Pony Bells</option>
+        <option value="drum">🥁 Puppy Drum</option>
+        <option value="synth">🎮 Magic Synth</option>
+        <option value="harp">🌈 Rainbow Harp</option>
+      </select>
+      <span id="tempo-label">Tempo</span>
+      <input type="range" id="tempo-slider" min="60" max="200" value="120">
+    </div>
+    <div id="seq-grid-wrap">
+      <div id="seq-grid"></div>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+<div id="cursor-dot"></div>
+
+<script>
+// ═══════════════════════════════════════════════════════════
+// CONSTANTS
+// ═══════════════════════════════════════════════════════════
+const PALETTE = [
+  '#FF6EB4','#FF3E9D','#A855F7','#7C3AED','#38BDF8','#0EA5E9',
+  '#FB923C','#F97316','#FACC15','#EAB308','#4ADE80','#16A34A',
+  '#2DD4BF','#0D9488','#F87171','#DC2626','#C084FC','#9333EA',
+  '#60A5FA','#2563EB','#FCA5A5','#FBBF24','#86EFAC','#34D399',
+  '#FFFFFF','#E5E7EB','#9CA3AF','#6B7280','#374151','#000000'
+];
+
+const NOTE_FREQS = [392.0, 440.0, 523.25, 587.33, 659.25, 783.99, 880.0, 1046.5];
+// G4, A4, C5, D5, E5, G5, A5, C6 — C major pentatonic + extra
+
+const SEQ_COLS = 16;
+const SEQ_ROWS = 8;
+const MAX_FRAMES = 10;
+
+// ═══════════════════════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════════════════════
+let currentTool = 'pencil';
+let currentColor = '#FF6EB4';
+let brushSize = 6;
+let isDrawing = false;
+let lastX = 0, lastY = 0;
+let startX = 0, startY = 0;
+let undoStack = [];
+let selectedStamp = null;
+let onionSkin = false;
+let animPlaying = false;
+let animTimer = null;
+let seqPlaying = false;
+let seqTimer = null;
+let seqStep = 0;
+let currentFrame = 0;
+let frames = []; // array of ImageData
+let seqData = Array.from({length: SEQ_ROWS}, () => Array(SEQ_COLS).fill(false));
+let audioCtx = null;
+
+// ═══════════════════════════════════════════════════════════
+// CANVAS SETUP
+// ═══════════════════════════════════════════════════════════
+const wrap = document.getElementById('canvas-wrap');
+const mainCanvas = document.getElementById('main-canvas');
+const overlayCanvas = document.getElementById('overlay-canvas');
+const ctx = mainCanvas.getContext('2d');
+const octx = overlayCanvas.getContext('2d');
+const dpr = window.devicePixelRatio || 1;
+
+function resizeCanvas() {
+  const w = wrap.clientWidth;
+  const h = wrap.clientHeight;
+  // Save current drawing
+  let saved = null;
+  if (mainCanvas.width > 0) saved = ctx.getImageData(0, 0, mainCanvas.width, mainCanvas.height);
+
+  mainCanvas.width = w * dpr;
+  mainCanvas.height = h * dpr;
+  overlayCanvas.width = w * dpr;
+  overlayCanvas.height = h * dpr;
+  mainCanvas.style.width = w + 'px';
+  mainCanvas.style.height = h + 'px';
+  overlayCanvas.style.width = w + 'px';
+  overlayCanvas.style.height = h + 'px';
+  ctx.scale(dpr, dpr);
+  octx.scale(dpr, dpr);
+
+  ctx.fillStyle = '#FFFFFF';
+  ctx.fillRect(0, 0, w, h);
+  if (saved) ctx.putImageData(saved, 0, 0);
+
+  // Init first frame if needed
+  if (frames.length === 0) {
+    const blankFrame = ctx.getImageData(0, 0, mainCanvas.width, mainCanvas.height);
+    frames.push(blankFrame);
+    renderFrameStrip();
+  }
+}
+resizeCanvas();
+window.addEventListener('resize', resizeCanvas);
+
+// ═══════════════════════════════════════════════════════════
+// AUDIO
+// ═══════════════════════════════════════════════════════════
+function getAudio() {
+  if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  if (audioCtx.state === 'suspended') audioCtx.resume();
+  return audioCtx;
+}
+
+function playSfx(type) {
+  try {
+    const ac = getAudio();
+    const t = ac.currentTime;
+    let osc, gain, env;
+
+    gain = ac.createGain();
+    gain.connect(ac.destination);
+
+    if (type === 'pencil') {
+      // soft scratchy blip
+      osc = ac.createOscillator();
+      osc.type = 'sawtooth';
+      osc.frequency.setValueAtTime(600 + Math.random() * 200, t);
+      gain.gain.setValueAtTime(0.04, t);
+      gain.gain.exponentialRampToValueAtTime(0.001, t + 0.05);
+      osc.connect(gain);
+      osc.start(t); osc.stop(t + 0.05);
+    } else if (type === 'stamp') {
+      // boing
+      osc = ac.createOscillator();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(300, t);
+      osc.frequency.exponentialRampToValueAtTime(600, t + 0.08);
+      osc.frequency.exponentialRampToValueAtTime(400, t + 0.2);
+      gain.gain.setValueAtTime(0.18, t);
+      gain.gain.exponentialRampToValueAtTime(0.001, t + 0.25);
+      osc.connect(gain);
+      osc.start(t); osc.stop(t + 0.25);
+    } else if (type === 'fill') {
+      // splash — short noise burst
+      const buf = ac.createBuffer(1, ac.sampleRate * 0.15, ac.sampleRate);
+      const data = buf.getChannelData(0);
+      for (let i = 0; i < data.length; i++) data[i] = (Math.random() * 2 - 1) * (1 - i / data.length);
+      const src = ac.createBufferSource();
+      src.buffer = buf;
+      const filt = ac.createBiquadFilter();
+      filt.type = 'bandpass'; filt.frequency.value = 800; filt.Q.value = 0.5;
+      src.connect(filt); filt.connect(gain);
+      gain.gain.setValueAtTime(0.15, t);
+      gain.gain.exponentialRampToValueAtTime(0.001, t + 0.15);
+      src.start(t); src.stop(t + 0.15);
+    } else if (type === 'eraser') {
+      // squeak
+      osc = ac.createOscillator();
+      osc.type = 'square';
+      osc.frequency.setValueAtTime(1200, t);
+      osc.frequency.linearRampToValueAtTime(900, t + 0.06);
+      gain.gain.setValueAtTime(0.05, t);
+      gain.gain.exponentialRampToValueAtTime(0.001, t + 0.07);
+      osc.connect(gain);
+      osc.start(t); osc.stop(t + 0.07);
+    } else if (type === 'shape') {
+      // pop
+      osc = ac.createOscillator();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(500, t);
+      osc.frequency.exponentialRampToValueAtTime(200, t + 0.1);
+      gain.gain.setValueAtTime(0.15, t);
+      gain.gain.exponentialRampToValueAtTime(0.001, t + 0.12);
+      osc.connect(gain);
+      osc.start(t); osc.stop(t + 0.12);
+    }
+  } catch(e) {}
+}
+
+function playSeqNote(row, instrument) {
+  try {
+    const ac = getAudio();
+    const t = ac.currentTime;
+    const freq = NOTE_FREQS[SEQ_ROWS - 1 - row];
+    const gain = ac.createGain();
+    gain.connect(ac.destination);
+
+    if (instrument === 'bell') {
+      const osc = ac.createOscillator();
+      osc.type = 'sine';
+      osc.frequency.value = freq;
+      gain.gain.setValueAtTime(0.2, t);
+      gain.gain.exponentialRampToValueAtTime(0.001, t + 0.6);
+      osc.connect(gain); osc.start(t); osc.stop(t + 0.6);
+    } else if (instrument === 'drum') {
+      const osc = ac.createOscillator();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(120, t);
+      osc.frequency.exponentialRampToValueAtTime(40, t + 0.08);
+      gain.gain.setValueAtTime(0.35, t);
+      gain.gain.exponentialRampToValueAtTime(0.001, t + 0.12);
+      osc.connect(gain); osc.start(t); osc.stop(t + 0.12);
+    } else if (instrument === 'synth') {
+      const osc = ac.createOscillator();
+      osc.type = 'square';
+      osc.frequency.value = freq;
+      gain.gain.setValueAtTime(0.1, t);
+      gain.gain.exponentialRampToValueAtTime(0.001, t + 0.15);
+      osc.connect(gain); osc.start(t); osc.stop(t + 0.15);
+    } else if (instrument === 'harp') {
+      const osc = ac.createOscillator();
+      osc.type = 'triangle';
+      osc.frequency.value = freq;
+      gain.gain.setValueAtTime(0.15, t);
+      gain.gain.exponentialRampToValueAtTime(0.001, t + 0.4);
+      osc.connect(gain); osc.start(t); osc.stop(t + 0.4);
+    }
+  } catch(e) {}
+}
+
+// ═══════════════════════════════════════════════════════════
+// COLOR PALETTE
+// ═══════════════════════════════════════════════════════════
+const colorbar = document.getElementById('colorbar');
+const customBtn = document.getElementById('custom-color-btn');
+const colorInput = document.getElementById('color-input');
+
+PALETTE.forEach(c => {
+  const sw = document.createElement('div');
+  sw.className = 'swatch';
+  sw.style.background = c;
+  if (c === currentColor) sw.classList.add('active');
+  sw.addEventListener('pointerdown', () => selectColor(c, sw));
+  colorbar.appendChild(sw);
+});
+colorbar.insertBefore(customBtn, colorbar.firstChild);
+
+function selectColor(c, el) {
+  currentColor = c;
+  document.querySelectorAll('.swatch').forEach(s => s.classList.remove('active'));
+  if (el) el.classList.add('active');
+  if (currentTool === 'eraser' || currentTool === 'fill' || currentTool === 'stamps') {
+    selectTool('pencil');
+  }
+}
+customBtn.addEventListener('click', () => colorInput.click());
+colorInput.addEventListener('input', e => {
+  selectColor(e.target.value, null);
+});
+
+// ═══════════════════════════════════════════════════════════
+// TOOLS
+// ═══════════════════════════════════════════════════════════
+document.querySelectorAll('[data-tool]').forEach(btn => {
+  btn.addEventListener('pointerdown', () => selectTool(btn.dataset.tool));
+});
+
+function selectTool(tool) {
+  currentTool = tool;
+  document.querySelectorAll('[data-tool]').forEach(b => b.classList.remove('active'));
+  const el = document.querySelector(`[data-tool="${tool}"]`);
+  if (el) el.classList.add('active');
+
+  const sizeBar = document.getElementById('size-bar');
+  sizeBar.classList.toggle('visible', tool === 'pencil' || tool === 'eraser');
+}
+
+// Brush size
+const sizeSlider = document.getElementById('size-slider');
+const sizeDot = document.getElementById('size-dot');
+function updateSizePreview() {
+  brushSize = parseInt(sizeSlider.value);
+  const s = Math.max(4, Math.min(brushSize, 24));
+  sizeDot.style.width = s + 'px';
+  sizeDot.style.height = s + 'px';
+}
+sizeSlider.addEventListener('input', updateSizePreview);
+updateSizePreview();
+
+// ═══════════════════════════════════════════════════════════
+// UNDO
+// ═══════════════════════════════════════════════════════════
+function pushUndo() {
+  if (undoStack.length > 25) undoStack.shift();
+  undoStack.push(ctx.getImageData(0, 0, mainCanvas.width, mainCanvas.height));
+}
+function undo() {
+  if (!undoStack.length) return;
+  ctx.putImageData(undoStack.pop(), 0, 0);
+  saveCurrentFrame();
+  playSfx('shape');
+}
+document.getElementById('btn-undo').addEventListener('pointerdown', undo);
+document.getElementById('btn-clear').addEventListener('pointerdown', () => {
+  if (!confirm('Clear this frame?')) return;
+  pushUndo();
+  ctx.fillStyle = '#FFFFFF';
+  ctx.fillRect(0, 0, wrap.clientWidth, wrap.clientHeight);
+  saveCurrentFrame();
+  playSfx('fill');
+});
+
+// ═══════════════════════════════════════════════════════════
+// DRAWING EVENTS
+// ═══════════════════════════════════════════════════════════
+overlayCanvas.addEventListener('pointerdown', onPointerDown);
+overlayCanvas.addEventListener('pointermove', onPointerMove);
+overlayCanvas.addEventListener('pointerup', onPointerUp);
+overlayCanvas.addEventListener('pointercancel', onPointerUp);
+overlayCanvas.addEventListener('contextmenu', e => e.preventDefault());
+
+function getPos(e) {
+  const rect = mainCanvas.getBoundingClientRect();
+  return {
+    x: (e.clientX - rect.left),
+    y: (e.clientY - rect.top)
+  };
+}
+
+let sfxThrottle = 0;
+function onPointerDown(e) {
+  e.preventDefault();
+  getAudio(); // unlock audio context on user gesture
+  const pos = getPos(e);
+  isDrawing = true;
+  startX = lastX = pos.x;
+  startY = lastY = pos.y;
+  pushUndo();
+
+  if (currentTool === 'fill') {
+    floodFill(Math.round(pos.x), Math.round(pos.y), currentColor);
+    saveCurrentFrame();
+    isDrawing = false;
+    playSfx('fill');
+    return;
+  }
+  if (currentTool === 'stamp' && selectedStamp) {
+    drawStamp(ctx, selectedStamp, pos.x, pos.y, 60);
+    saveCurrentFrame();
+    isDrawing = false;
+    playSfx('stamp');
+    return;
+  }
+  if (currentTool === 'pencil' || currentTool === 'eraser') {
+    drawDot(pos.x, pos.y);
+  }
+}
+
+function onPointerMove(e) {
+  e.preventDefault();
+  if (!isDrawing) return;
+  const pos = getPos(e);
+
+  // Cursor dot
+  const dot = document.getElementById('cursor-dot');
+  dot.style.left = e.clientX + 'px';
+  dot.style.top = e.clientY + 'px';
+
+  if (currentTool === 'pencil' || currentTool === 'eraser') {
+    drawLine(lastX, lastY, pos.x, pos.y);
+    const now = Date.now();
+    if (now - sfxThrottle > 80) {
+      playSfx(currentTool === 'eraser' ? 'eraser' : 'pencil');
+      sfxThrottle = now;
+    }
+  } else if (['line','rect','circle'].includes(currentTool)) {
+    octx.clearRect(0, 0, overlayCanvas.width, overlayCanvas.height);
+    drawShapePreview(octx, startX, startY, pos.x, pos.y);
+  }
+  lastX = pos.x; lastY = pos.y;
+}
+
+function onPointerUp(e) {
+  if (!isDrawing) return;
+  isDrawing = false;
+  const pos = getPos(e);
+
+  if (['line','rect','circle'].includes(currentTool)) {
+    octx.clearRect(0, 0, overlayCanvas.width, overlayCanvas.height);
+    drawShapeOnMain(startX, startY, pos.x, pos.y);
+    playSfx('shape');
+  }
+  if (currentTool === 'pencil' || currentTool === 'eraser') {
+    saveCurrentFrame();
+  }
+  saveCurrentFrame();
+}
+
+function drawDot(x, y) {
+  ctx.save();
+  if (currentTool === 'eraser') {
+    ctx.globalCompositeOperation = 'destination-out';
+    ctx.fillStyle = 'rgba(0,0,0,1)';
+  } else {
+    ctx.fillStyle = currentColor;
+  }
+  ctx.beginPath();
+  ctx.arc(x, y, brushSize / 2, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.restore();
+}
+
+function drawLine(x1, y1, x2, y2) {
+  ctx.save();
+  if (currentTool === 'eraser') {
+    ctx.globalCompositeOperation = 'destination-out';
+    ctx.strokeStyle = 'rgba(0,0,0,1)';
+  } else {
+    ctx.strokeStyle = currentColor;
+  }
+  ctx.lineWidth = brushSize;
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+  ctx.beginPath();
+  ctx.moveTo(x1, y1);
+  ctx.lineTo(x2, y2);
+  ctx.stroke();
+  ctx.restore();
+}
+
+function drawShapePreview(c, x1, y1, x2, y2) {
+  c.save();
+  c.strokeStyle = currentColor;
+  c.lineWidth = brushSize;
+  c.lineCap = 'round';
+  c.setLineDash([6, 4]);
+  applyShapePath(c, x1, y1, x2, y2);
+  c.stroke();
+  c.restore();
+}
+
+function drawShapeOnMain(x1, y1, x2, y2) {
+  ctx.save();
+  ctx.strokeStyle = currentColor;
+  ctx.lineWidth = brushSize;
+  ctx.lineCap = 'round';
+  applyShapePath(ctx, x1, y1, x2, y2);
+  ctx.stroke();
+  ctx.restore();
+}
+
+function applyShapePath(c, x1, y1, x2, y2) {
+  c.beginPath();
+  if (currentTool === 'line') {
+    c.moveTo(x1, y1); c.lineTo(x2, y2);
+  } else if (currentTool === 'rect') {
+    c.rect(Math.min(x1,x2), Math.min(y1,y2), Math.abs(x2-x1), Math.abs(y2-y1));
+  } else if (currentTool === 'circle') {
+    const cx = (x1+x2)/2, cy = (y1+y2)/2;
+    const rx = Math.abs(x2-x1)/2, ry = Math.abs(y2-y1)/2;
+    c.ellipse(cx, cy, rx, ry, 0, 0, Math.PI*2);
+  }
+}
+
+// ═══════════════════════════════════════════════════════════
+// FLOOD FILL
+// ═══════════════════════════════════════════════════════════
+function hexToRgba(hex) {
+  const r = parseInt(hex.slice(1,3),16);
+  const g = parseInt(hex.slice(3,5),16);
+  const b = parseInt(hex.slice(5,7),16);
+  return [r, g, b, 255];
+}
+
+function colorsMatch(d, idx, target, tolerance=32) {
+  return Math.abs(d[idx]-target[0]) <= tolerance &&
+         Math.abs(d[idx+1]-target[1]) <= tolerance &&
+         Math.abs(d[idx+2]-target[2]) <= tolerance &&
+         Math.abs(d[idx+3]-target[3]) <= tolerance;
+}
+
+function floodFill(x, y, fillColor) {
+  const w = mainCanvas.width / dpr | 0;
+  const h = mainCanvas.height / dpr | 0;
+  const imgData = ctx.getImageData(0, 0, mainCanvas.width, mainCanvas.height);
+  const d = imgData.data;
+  const pw = mainCanvas.width;
+
+  const fx = Math.round(x * dpr), fy = Math.round(y * dpr);
+  const idx = (fy * pw + fx) * 4;
+  const target = [d[idx], d[idx+1], d[idx+2], d[idx+3]];
+  const fill = hexToRgba(fillColor);
+
+  if (colorsMatch(d, idx, fill, 5)) return;
+
+  const stack = [[fx, fy]];
+  const visited = new Uint8Array(pw * mainCanvas.height);
+
+  while (stack.length) {
+    const [cx, cy] = stack.pop();
+    if (cx < 0 || cy < 0 || cx >= pw || cy >= mainCanvas.height) continue;
+    const i = (cy * pw + cx) * 4;
+    if (visited[cy * pw + cx] || !colorsMatch(d, i, target)) continue;
+    visited[cy * pw + cx] = 1;
+    d[i] = fill[0]; d[i+1] = fill[1]; d[i+2] = fill[2]; d[i+3] = fill[3];
+    stack.push([cx+1,cy],[cx-1,cy],[cx,cy+1],[cx,cy-1]);
+  }
+  ctx.putImageData(imgData, 0, 0);
+}
+
+// ═══════════════════════════════════════════════════════════
+// STAMPS
+// ═══════════════════════════════════════════════════════════
+const STAMPS = [
+  { name: 'Sunny', draw: drawSunny },
+  { name: 'Izzy', draw: drawIzzy },
+  { name: 'Pipp', draw: drawPipp },
+  { name: 'Zipp', draw: drawZipp },
+  { name: 'Hitch', draw: drawHitch },
+  { name: 'Bluey', draw: drawBluey },
+  { name: 'Bingo', draw: drawBingo },
+  { name: 'Rainbow', draw: drawRainbow },
+  { name: 'Star', draw: drawStar },
+  { name: 'Heart', draw: drawHeart },
+  { name: 'Sparkle', draw: drawSparkle },
+  { name: 'Crown', draw: drawCrown },
+  { name: 'Flower', draw: drawFlower },
+  { name: 'Paw', draw: drawPaw },
+  { name: 'Moon', draw: drawMoon },
+  { name: 'Butterfly', draw: drawButterfly },
+  { name: 'Diamond', draw: drawDiamond },
+  { name: 'Cloud', draw: drawCloud },
+  { name: 'Balloon', draw: drawBalloon },
+  { name: 'Magic ✨', draw: drawMagic },
+];
+
+function drawStamp(c, stamp, cx, cy, size) {
+  c.save();
+  c.translate(cx, cy);
+  stamp.draw(c, size);
+  c.restore();
+}
+
+// ── MLP / Bluey stamp drawing functions ──
+
+function drawPonyHead(c, size, bodyColor, hairColors, hasMane=true, hasHorn=false, hasWings=false) {
+  const r = size * 0.35;
+  // Body/head oval
+  c.save();
+  c.fillStyle = bodyColor;
+  c.beginPath();
+  c.ellipse(0, 0, r, r*0.9, 0, 0, Math.PI*2);
+  c.fill();
+  // Eyes
+  c.fillStyle = '#FFFFFF';
+  c.beginPath(); c.ellipse(-r*0.3, -r*0.1, r*0.22, r*0.28, -0.2, 0, Math.PI*2); c.fill();
+  c.beginPath(); c.ellipse(r*0.3, -r*0.1, r*0.22, r*0.28, 0.2, 0, Math.PI*2); c.fill();
+  c.fillStyle = '#6B21A8';
+  c.beginPath(); c.arc(-r*0.28, -r*0.08, r*0.13, 0, Math.PI*2); c.fill();
+  c.beginPath(); c.arc(r*0.28, -r*0.08, r*0.13, 0, Math.PI*2); c.fill();
+  c.fillStyle = '#000';
+  c.beginPath(); c.arc(-r*0.27, -r*0.09, r*0.06, 0, Math.PI*2); c.fill();
+  c.beginPath(); c.arc(r*0.27, -r*0.09, r*0.06, 0, Math.PI*2); c.fill();
+  // Snout
+  c.fillStyle = lighten(bodyColor);
+  c.beginPath(); c.ellipse(0, r*0.3, r*0.3, r*0.2, 0, 0, Math.PI*2); c.fill();
+  c.fillStyle = '#F9A8D4';
+  c.beginPath(); c.arc(-r*0.1, r*0.32, r*0.07, 0, Math.PI*2); c.fill();
+  c.beginPath(); c.arc(r*0.1, r*0.32, r*0.07, 0, Math.PI*2); c.fill();
+  // Horn
+  if (hasHorn) {
+    c.fillStyle = '#FDE68A';
+    c.beginPath(); c.moveTo(-r*0.1, -r*0.7); c.lineTo(r*0.1, -r*0.7); c.lineTo(0, -r*1.2); c.closePath(); c.fill();
+    c.strokeStyle = '#F59E0B'; c.lineWidth = 1;
+    c.stroke();
+  }
+  // Wings
+  if (hasWings) {
+    c.fillStyle = bodyColor + 'CC';
+    c.beginPath(); c.ellipse(-r*0.9, 0, r*0.5, r*0.25, -0.4, 0, Math.PI*2); c.fill();
+    c.beginPath(); c.ellipse(r*0.9, 0, r*0.5, r*0.25, 0.4, 0, Math.PI*2); c.fill();
+  }
+  // Mane
+  if (hasMane && hairColors.length) {
+    const maneW = r * 0.45;
+    hairColors.forEach((col, i) => {
+      c.fillStyle = col;
+      c.beginPath();
+      c.ellipse(-r - i*maneW*0.15, -r*0.2 + i*r*0.15, maneW * (1-i*0.1), r*0.6*(1-i*0.05), -0.5+i*0.1, 0, Math.PI*2);
+      c.fill();
+    });
+  }
+  c.restore();
+}
+
+function lighten(hex) {
+  const r = Math.min(255, parseInt(hex.slice(1,3),16)+50);
+  const g = Math.min(255, parseInt(hex.slice(3,5),16)+50);
+  const b = Math.min(255, parseInt(hex.slice(5,7),16)+50);
+  return `rgb(${r},${g},${b})`;
+}
+
+function drawSunny(c, size) {
+  // Sunny Starscout — orange/yellow alicorn
+  const r = size * 0.35;
+  drawPonyHead(c, size, '#FB923C', ['#FACC15','#FDE68A','#F97316'], true, true, true);
+  // Star cutie mark hint
+  c.fillStyle = '#FACC15';
+  drawStarShape(c, r*0.6, r*0.5, r*0.15, 5);
+}
+
+function drawIzzy(c, size) {
+  // Izzy Moonbow — purple unicorn
+  drawPonyHead(c, size, '#C084FC', ['#E879F9','#A78BFA','#7C3AED'], true, true, false);
+}
+
+function drawPipp(c, size) {
+  // Pipp Petals — pink pegasus
+  drawPonyHead(c, size, '#F472B6', ['#FB7185','#FCA5A5','#FECDD3'], true, false, true);
+}
+
+function drawZipp(c, size) {
+  // Zipp Storm — blue/purple pegasus
+  drawPonyHead(c, size, '#818CF8', ['#6366F1','#A5B4FC','#C7D2FE'], true, false, true);
+}
+
+function drawHitch(c, size) {
+  // Hitch Trailblazer — teal earth pony
+  const r = size * 0.35;
+  drawPonyHead(c, size, '#34D399', ['#10B981','#6EE7B7'], true, false, false);
+  // Sheriff badge
+  c.fillStyle = '#FBBF24';
+  drawStarShape(c, r*0.5, r*0.5, r*0.13, 5);
+}
+
+function drawDogHead(c, size, bodyColor, spotColor, earColor) {
+  const r = size * 0.35;
+  c.save();
+  // Ears
+  c.fillStyle = earColor;
+  c.beginPath(); c.ellipse(-r*0.75, -r*0.6, r*0.3, r*0.45, -0.3, 0, Math.PI*2); c.fill();
+  c.beginPath(); c.ellipse(r*0.75, -r*0.6, r*0.3, r*0.45, 0.3, 0, Math.PI*2); c.fill();
+  // Head
+  c.fillStyle = bodyColor;
+  c.beginPath(); c.arc(0, 0, r, 0, Math.PI*2); c.fill();
+  // Snout
+  c.fillStyle = lighten(bodyColor);
+  c.beginPath(); c.ellipse(0, r*0.25, r*0.42, r*0.3, 0, 0, Math.PI*2); c.fill();
+  // Nose
+  c.fillStyle = '#1F2937';
+  c.beginPath(); c.ellipse(0, r*0.1, r*0.13, r*0.09, 0, 0, Math.PI*2); c.fill();
+  // Eyes
+  c.fillStyle = '#1F2937';
+  c.beginPath(); c.arc(-r*0.32, -r*0.15, r*0.1, 0, Math.PI*2); c.fill();
+  c.beginPath(); c.arc(r*0.32, -r*0.15, r*0.1, 0, Math.PI*2); c.fill();
+  // White eye shine
+  c.fillStyle = 'white';
+  c.beginPath(); c.arc(-r*0.28, -r*0.19, r*0.04, 0, Math.PI*2); c.fill();
+  c.beginPath(); c.arc(r*0.36, -r*0.19, r*0.04, 0, Math.PI*2); c.fill();
+  // Spot
+  if (spotColor) {
+    c.fillStyle = spotColor;
+    c.beginPath(); c.ellipse(r*0.4, r*0.4, r*0.25, r*0.2, 0.5, 0, Math.PI*2); c.fill();
+  }
+  c.restore();
+}
+
+function drawBluey(c, size) {
+  drawDogHead(c, size, '#60A5FA', '#3B82F6', '#2563EB');
+}
+
+function drawBingo(c, size) {
+  drawDogHead(c, size, '#FB923C', '#F97316', '#C2410C');
+}
+
+// ── Generic stamps ──
+function drawRainbow(c, size) {
+  const r = size * 0.42;
+  const colors = ['#EF4444','#F97316','#FACC15','#4ADE80','#60A5FA','#A855F7'];
+  colors.forEach((col, i) => {
+    const ri = r - i * r/colors.length * 0.7;
+    c.strokeStyle = col;
+    c.lineWidth = r * 0.12;
+    c.beginPath();
+    c.arc(0, r*0.1, ri, Math.PI, 0);
+    c.stroke();
+  });
+}
+
+function drawStar(c, size) {
+  c.fillStyle = '#FACC15';
+  c.strokeStyle = '#F59E0B';
+  c.lineWidth = 2;
+  drawStarShape(c, 0, 0, size*0.42, 5);
+  c.fill(); c.stroke();
+}
+
+function drawStarShape(c, cx, cy, r, points) {
+  const inner = r * 0.4;
+  c.beginPath();
+  for (let i = 0; i < points * 2; i++) {
+    const angle = (i * Math.PI / points) - Math.PI/2;
+    const rad = i % 2 === 0 ? r : inner;
+    const x = cx + Math.cos(angle) * rad;
+    const y = cy + Math.sin(angle) * rad;
+    i === 0 ? c.moveTo(x,y) : c.lineTo(x,y);
+  }
+  c.closePath();
+}
+
+function drawHeart(c, size) {
+  const s = size * 0.38;
+  c.fillStyle = '#F43F5E';
+  c.strokeStyle = '#BE123C'; c.lineWidth = 2;
+  c.beginPath();
+  c.moveTo(0, s*0.3);
+  c.bezierCurveTo(0, -s*0.1, -s, -s*0.1, -s, s*0.3);
+  c.bezierCurveTo(-s, s*0.7, 0, s, 0, s*1.1);
+  c.bezierCurveTo(0, s, s, s*0.7, s, s*0.3);
+  c.bezierCurveTo(s, -s*0.1, 0, -s*0.1, 0, s*0.3);
+  c.fill(); c.stroke();
+}
+
+function drawSparkle(c, size) {
+  const r = size * 0.42;
+  c.fillStyle = '#E879F9';
+  [[0,1],[1,0],[0,-1],[-1,0]].forEach(([dx,dy], i) => {
+    c.save();
+    c.rotate(i * Math.PI/2);
+    c.beginPath();
+    c.moveTo(0,0);
+    c.quadraticCurveTo(r*0.2, r*0.5, 0, r);
+    c.quadraticCurveTo(-r*0.2, r*0.5, 0, 0);
+    c.fill();
+    c.restore();
+  });
+  c.fillStyle = '#F3E8FF';
+  c.beginPath(); c.arc(0,0,r*0.15,0,Math.PI*2); c.fill();
+}
+
+function drawCrown(c, size) {
+  const s = size * 0.4;
+  c.fillStyle = '#FBBF24';
+  c.strokeStyle = '#D97706'; c.lineWidth = 2;
+  c.beginPath();
+  c.moveTo(-s, s*0.4);
+  c.lineTo(-s, -s*0.2);
+  c.lineTo(-s*0.5, s*0.1);
+  c.lineTo(0, -s*0.5);
+  c.lineTo(s*0.5, s*0.1);
+  c.lineTo(s, -s*0.2);
+  c.lineTo(s, s*0.4);
+  c.closePath();
+  c.fill(); c.stroke();
+  // gems
+  [['#EF4444',-s*0.55,s*0.1],['#A855F7',0,-s*0.3],['#60A5FA',s*0.55,s*0.1]].forEach(([col,x,y]) => {
+    c.fillStyle = col;
+    c.beginPath(); c.arc(x,y,s*0.1,0,Math.PI*2); c.fill();
+  });
+}
+
+function drawFlower(c, size) {
+  const r = size * 0.2;
+  const colors = ['#F472B6','#FB923C','#FACC15','#4ADE80','#60A5FA','#A855F7'];
+  for (let i = 0; i < 6; i++) {
+    c.fillStyle = colors[i];
+    const angle = i * Math.PI / 3;
+    c.beginPath();
+    c.ellipse(Math.cos(angle)*r*1.2, Math.sin(angle)*r*1.2, r, r*0.6, angle, 0, Math.PI*2);
+    c.fill();
+  }
+  c.fillStyle = '#FBBF24';
+  c.beginPath(); c.arc(0,0,r*0.7,0,Math.PI*2); c.fill();
+}
+
+function drawPaw(c, size) {
+  const r = size * 0.22;
+  c.fillStyle = '#FB923C';
+  c.beginPath(); c.arc(0, r*0.3, r, 0, Math.PI*2); c.fill();
+  [[-r*0.9,-r*0.4],[r*0.9,-r*0.4],[0,-r*1.1]].forEach(([x,y]) => {
+    c.beginPath(); c.arc(x,y,r*0.55,0,Math.PI*2); c.fill();
+  });
+}
+
+function drawMoon(c, size) {
+  const r = size * 0.38;
+  c.fillStyle = '#FACC15';
+  c.beginPath(); c.arc(0, 0, r, 0, Math.PI*2); c.fill();
+  c.fillStyle = '#FDF4FF';
+  c.beginPath(); c.arc(r*0.3, -r*0.15, r*0.82, 0, Math.PI*2); c.fill();
+}
+
+function drawButterfly(c, size) {
+  const r = size * 0.38;
+  [['#F472B6',1],['#A855F7',-1]].forEach(([col,side]) => {
+    c.fillStyle = col + 'CC';
+    c.beginPath();
+    c.ellipse(side*r*0.55, -r*0.2, r*0.5, r*0.3, side*0.4, 0, Math.PI*2);
+    c.fill();
+    c.fillStyle = col + '99';
+    c.beginPath();
+    c.ellipse(side*r*0.5, r*0.3, r*0.35, r*0.22, side*0.6, 0, Math.PI*2);
+    c.fill();
+  });
+  c.fillStyle = '#1F2937';
+  c.beginPath(); c.ellipse(0, 0, r*0.08, r*0.5, 0, 0, Math.PI*2); c.fill();
+}
+
+function drawDiamond(c, size) {
+  const s = size * 0.38;
+  const grad = ctx.createLinearGradient(-s, -s, s, s);
+  grad.addColorStop(0, '#BAE6FD');
+  grad.addColorStop(0.5, '#FFFFFF');
+  grad.addColorStop(1, '#60A5FA');
+  c.fillStyle = grad;
+  c.strokeStyle = '#0EA5E9'; c.lineWidth = 2;
+  c.beginPath();
+  c.moveTo(0, -s); c.lineTo(s, 0); c.lineTo(0, s); c.lineTo(-s, 0);
+  c.closePath(); c.fill(); c.stroke();
+}
+
+function drawCloud(c, size) {
+  const r = size * 0.2;
+  c.fillStyle = '#FFFFFF';
+  c.strokeStyle = '#E5E7EB'; c.lineWidth = 2;
+  [[-r*1.1,0],[0,-r*0.6],[r*1.1,0],[0,r*0.3],[-r*0.6,r*0.35],[r*0.6,r*0.35]].forEach(([x,y]) => {
+    c.beginPath(); c.arc(x, y, r*1.1, 0, Math.PI*2); c.fill(); c.stroke();
+  });
+}
+
+function drawBalloon(c, size) {
+  const r = size * 0.35;
+  c.fillStyle = '#F472B6';
+  c.strokeStyle = '#BE185D'; c.lineWidth = 2;
+  c.beginPath(); c.ellipse(0, -r*0.3, r*0.7, r, 0, 0, Math.PI*2); c.fill(); c.stroke();
+  // Knot
+  c.fillStyle = '#BE185D';
+  c.beginPath(); c.arc(0, r*0.7, r*0.1, 0, Math.PI*2); c.fill();
+  // String
+  c.strokeStyle = '#9CA3AF'; c.lineWidth = 1.5;
+  c.beginPath(); c.moveTo(0, r*0.8); c.quadraticCurveTo(r*0.3, r*1.2, 0, r*1.5); c.stroke();
+  // Shine
+  c.fillStyle = 'rgba(255,255,255,0.4)';
+  c.beginPath(); c.ellipse(-r*0.2, -r*0.6, r*0.2, r*0.12, -0.5, 0, Math.PI*2); c.fill();
+}
+
+function drawMagic(c, size) {
+  const r = size * 0.42;
+  // Wand
+  c.strokeStyle = '#7C3AED'; c.lineWidth = 3;
+  c.beginPath(); c.moveTo(-r*0.6, r*0.6); c.lineTo(r*0.3, -r*0.3); c.stroke();
+  // Star on tip
+  c.fillStyle = '#FACC15';
+  drawStarShape(c, r*0.35, -r*0.35, r*0.2, 5);
+  c.fill();
+  // Sparkles
+  [[-r*0.2,-r*0.7],[r*0.5,-r*0.1],[-r*0.7,0],[r*0.1,r*0.2]].forEach(([x,y]) => {
+    c.fillStyle = '#E879F9';
+    c.beginPath(); c.arc(x,y,r*0.06,0,Math.PI*2); c.fill();
+  });
+}
+
+// Build stamp panel
+const stampGrid = document.getElementById('stamp-grid');
+STAMPS.forEach((stamp, idx) => {
+  const btn = document.createElement('div');
+  btn.className = 'stamp-btn';
+  const thumbCanvas = document.createElement('canvas');
+  thumbCanvas.width = 60; thumbCanvas.height = 60;
+  const tc = thumbCanvas.getContext('2d');
+  tc.save();
+  tc.translate(30, 30);
+  stamp.draw(tc, 60);
+  tc.restore();
+  const label = document.createElement('span');
+  label.textContent = stamp.name;
+  btn.appendChild(thumbCanvas);
+  btn.appendChild(label);
+  btn.addEventListener('pointerdown', () => {
+    document.querySelectorAll('.stamp-btn').forEach(b => b.classList.remove('selected'));
+    btn.classList.add('selected');
+    selectedStamp = stamp;
+    selectTool('stamp');
+    closePanel('stamp-panel');
+  });
+  stampGrid.appendChild(btn);
+});
+
+// ═══════════════════════════════════════════════════════════
+// ANIMATION FRAMES
+// ═══════════════════════════════════════════════════════════
+function saveCurrentFrame() {
+  frames[currentFrame] = ctx.getImageData(0, 0, mainCanvas.width, mainCanvas.height);
+  updateFrameThumb(currentFrame);
+}
+
+function loadFrame(idx) {
+  currentFrame = idx;
+  if (frames[idx]) {
+    ctx.putImageData(frames[idx], 0, 0);
+  } else {
+    ctx.fillStyle = '#FFFFFF';
+    ctx.fillRect(0, 0, wrap.clientWidth, wrap.clientHeight);
+  }
+  renderFrameStrip();
+  if (onionSkin && idx > 0 && frames[idx-1]) drawOnionSkin();
+  else octx.clearRect(0, 0, overlayCanvas.width, overlayCanvas.height);
+}
+
+function drawOnionSkin() {
+  octx.clearRect(0, 0, overlayCanvas.width, overlayCanvas.height);
+  if (currentFrame > 0 && frames[currentFrame-1]) {
+    octx.globalAlpha = 0.3;
+    octx.putImageData(frames[currentFrame-1], 0, 0);
+    octx.globalAlpha = 1;
+  }
+}
+
+function renderFrameStrip() {
+  const strip = document.getElementById('frame-strip');
+  strip.innerHTML = '';
+  frames.forEach((frame, i) => {
+    const thumb = document.createElement('div');
+    thumb.className = 'frame-thumb' + (i === currentFrame ? ' active' : '');
+    const tc = document.createElement('canvas');
+    tc.width = 140; tc.height = 140;
+    const tctx = tc.getContext('2d');
+    tctx.fillStyle = '#FFFFFF';
+    tctx.fillRect(0,0,140,140);
+    if (frame) tctx.putImageData(frame, 0, 0, 0, 0, mainCanvas.width, mainCanvas.height);
+    thumb.appendChild(tc);
+    const num = document.createElement('div');
+    num.className = 'frame-num';
+    num.textContent = i+1;
+    thumb.appendChild(num);
+    thumb.addEventListener('pointerdown', () => {
+      if (!animPlaying) { saveCurrentFrame(); loadFrame(i); }
+    });
+    strip.appendChild(thumb);
+  });
+  if (frames.length < MAX_FRAMES) {
+    const addBtn = document.createElement('div');
+    addBtn.className = 'frame-add';
+    addBtn.textContent = '+';
+    addBtn.addEventListener('pointerdown', addFrame);
+    strip.appendChild(addBtn);
+  }
+}
+
+function updateFrameThumb(idx) {
+  const strip = document.getElementById('frame-strip');
+  const thumbs = strip.querySelectorAll('.frame-thumb');
+  if (!thumbs[idx]) return;
+  const tc = thumbs[idx].querySelector('canvas');
+  const tctx = tc.getContext('2d');
+  tctx.fillStyle = '#FFFFFF'; tctx.fillRect(0,0,140,140);
+  if (frames[idx]) tctx.putImageData(frames[idx], 0, 0, 0, 0, mainCanvas.width, mainCanvas.height);
+}
+
+function addFrame() {
+  if (frames.length >= MAX_FRAMES) return;
+  saveCurrentFrame();
+  const blank = ctx.createImageData(mainCanvas.width, mainCanvas.height);
+  // Fill white
+  for (let i = 3; i < blank.data.length; i += 4) blank.data[i] = 255;
+  for (let i = 0; i < blank.data.length; i += 4) { blank.data[i]=255; blank.data[i+1]=255; blank.data[i+2]=255; blank.data[i+3]=255; }
+  frames.push(blank);
+  loadFrame(frames.length - 1);
+  playSfx('shape');
+}
+
+// Animation playback
+document.getElementById('btn-play-anim').addEventListener('pointerdown', () => {
+  if (animPlaying) return;
+  animPlaying = true;
+  saveCurrentFrame();
+  let f = 0;
+  function step() {
+    loadFrame(f);
+    f = (f + 1) % frames.length;
+    const fps = parseInt(document.getElementById('fps-slider').value);
+    animTimer = setTimeout(step, 1000 / fps);
+  }
+  step();
+});
+document.getElementById('btn-stop-anim').addEventListener('pointerdown', () => {
+  animPlaying = false;
+  clearTimeout(animTimer);
+  loadFrame(currentFrame);
+});
+document.getElementById('onion-toggle').addEventListener('pointerdown', () => {
+  onionSkin = !onionSkin;
+  document.getElementById('onion-toggle').classList.toggle('on', onionSkin);
+  if (onionSkin && currentFrame > 0) drawOnionSkin();
+  else octx.clearRect(0, 0, overlayCanvas.width, overlayCanvas.height);
+});
+
+// ═══════════════════════════════════════════════════════════
+// MUSIC SEQUENCER
+// ═══════════════════════════════════════════════════════════
+const NOTE_NAMES = ['C6','A5','G5','E5','D5','C5','A4','G4'];
+const seqGrid = document.getElementById('seq-grid');
+
+function buildSeqGrid() {
+  seqGrid.style.gridTemplateColumns = `40px repeat(${SEQ_COLS}, 28px)`;
+  seqGrid.innerHTML = '';
+  for (let row = 0; row < SEQ_ROWS; row++) {
+    const label = document.createElement('div');
+    label.className = 'seq-row-label';
+    label.textContent = NOTE_NAMES[row];
+    seqGrid.appendChild(label);
+    for (let col = 0; col < SEQ_COLS; col++) {
+      const cell = document.createElement('div');
+      cell.className = 'seq-cell' + (seqData[row][col] ? ' on' : '');
+      cell.dataset.row = row; cell.dataset.col = col;
+      cell.addEventListener('pointerdown', () => {
+        seqData[row][col] = !seqData[row][col];
+        cell.classList.toggle('on', seqData[row][col]);
+        if (seqData[row][col]) {
+          const inst = document.getElementById('instrument-select').value;
+          playSeqNote(row, inst);
+        }
+      });
+      seqGrid.appendChild(cell);
+    }
+  }
+}
+buildSeqGrid();
+
+let seqStepHighlight = -1;
+function stepSequencer() {
+  const inst = document.getElementById('instrument-select').value;
+  const bpm = parseInt(document.getElementById('tempo-slider').value);
+  const interval = (60 / bpm / 4) * 1000;
+
+  // Clear previous highlight
+  if (seqStepHighlight >= 0) {
+    for (let row = 0; row < SEQ_ROWS; row++) {
+      const cell = seqGrid.children[1 + row*(SEQ_COLS+1) + seqStepHighlight];
+      if (cell) cell.classList.remove('playing');
+    }
+  }
+  seqStepHighlight = seqStep;
+  for (let row = 0; row < SEQ_ROWS; row++) {
+    const cell = seqGrid.children[1 + row*(SEQ_COLS+1) + seqStep];
+    if (cell) {
+      if (seqData[row][seqStep]) {
+        playSeqNote(row, inst);
+        cell.classList.add('playing');
+      } else {
+        cell.classList.add('playing');
+      }
+    }
+  }
+  seqStep = (seqStep + 1) % SEQ_COLS;
+  seqTimer = setTimeout(stepSequencer, interval);
+}
+
+document.getElementById('btn-play-seq').addEventListener('pointerdown', () => {
+  if (seqPlaying) return;
+  seqPlaying = true;
+  seqStep = 0;
+  stepSequencer();
+});
+document.getElementById('btn-stop-seq').addEventListener('pointerdown', () => {
+  seqPlaying = false;
+  clearTimeout(seqTimer);
+  // Clear highlights
+  seqGrid.querySelectorAll('.playing').forEach(c => c.classList.remove('playing'));
+  seqStepHighlight = -1;
+});
+
+// ═══════════════════════════════════════════════════════════
+// PANELS
+// ═══════════════════════════════════════════════════════════
+function openPanel(id) {
+  document.getElementById(id).classList.add('open');
+  document.getElementById('backdrop').classList.add('visible');
+}
+function closePanel(id) {
+  document.getElementById(id).classList.remove('open');
+  // Close backdrop only if no panels open
+  if (!document.querySelector('.panel.open')) {
+    document.getElementById('backdrop').classList.remove('visible');
+  }
+}
+function closeAllPanels() {
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('open'));
+  document.getElementById('backdrop').classList.remove('visible');
+}
+
+document.getElementById('btn-stamps').addEventListener('pointerdown', () => openPanel('stamp-panel'));
+document.getElementById('btn-anim').addEventListener('pointerdown', () => { renderFrameStrip(); openPanel('anim-panel'); });
+document.getElementById('btn-music').addEventListener('pointerdown', () => openPanel('music-panel'));
+document.getElementById('stamp-close').addEventListener('pointerdown', () => closePanel('stamp-panel'));
+document.getElementById('anim-close').addEventListener('pointerdown', () => closePanel('anim-panel'));
+document.getElementById('music-close').addEventListener('pointerdown', () => closePanel('music-panel'));
+document.getElementById('backdrop').addEventListener('pointerdown', closeAllPanels);
+
+// ═══════════════════════════════════════════════════════════
+// SHARE
+// ═══════════════════════════════════════════════════════════
+document.getElementById('btn-share').addEventListener('pointerdown', async () => {
+  saveCurrentFrame();
+  mainCanvas.toBlob(async (blob) => {
+    if (!blob) { showToast('Could not save image 😢'); return; }
+    const file = new File([blob], 'my-art.png', { type: 'image/png' });
+    if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
+      try {
+        await navigator.share({ files: [file], title: "My Art!", text: "Look what I made! 🎨" });
+        showToast('Shared! 🎉');
+      } catch(e) {
+        if (e.name !== 'AbortError') downloadFallback(blob);
+      }
+    } else {
+      downloadFallback(blob);
+    }
+  }, 'image/png');
+});
+
+function downloadFallback(blob) {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = 'my-art.png';
+  a.click();
+  URL.revokeObjectURL(url);
+  showToast('Saved! 💾');
+}
+
+// ═══════════════════════════════════════════════════════════
+// TOAST
+// ═══════════════════════════════════════════════════════════
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+// ═══════════════════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════════════════
+// Build first frame
+saveCurrentFrame();
+renderFrameStrip();
+showToast('Welcome, Amelia! 🌈✨');
+</script>
+</body>
+</html>
