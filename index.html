@@ -179,6 +179,29 @@
   }
   #size-dot { background: #333; border-radius: 50%; }
 
+  /* ── STAMP SIZE BAR ── */
+  #stamp-size-bar {
+    display: none;
+    align-items: center; gap: 6px;
+    padding: 3px 12px;
+    background: var(--panel);
+    border-top: 1px solid var(--border);
+    flex-shrink: 0;
+    height: 36px;
+  }
+  #stamp-size-bar.visible { display: flex; }
+  #stamp-size-bar label { font-size: 12px; color: var(--text); white-space: nowrap; }
+  .stamp-sz-btn {
+    font-size: 11px; font-weight: bold;
+    padding: 3px 8px; border-radius: 8px;
+    background: var(--bg); border: 2px solid var(--border);
+    color: var(--text); cursor: pointer; touch-action: manipulation !important;
+    white-space: nowrap;
+  }
+  .stamp-sz-btn.active {
+    background: var(--purple); border-color: var(--purple); color: #fff;
+  }
+
   /* ── SLIDE-UP PANELS ── */
   .panel {
     position: fixed;
@@ -448,6 +471,15 @@
     <div id="size-preview"><div id="size-dot"></div></div>
   </div>
 
+  <!-- Stamp size bar (shows when stamp tool active) -->
+  <div id="stamp-size-bar">
+    <label>Sticker size</label>
+    <div class="stamp-sz-btn" data-sz="40">S</div>
+    <div class="stamp-sz-btn active" data-sz="80">M</div>
+    <div class="stamp-sz-btn" data-sz="130">L</div>
+    <div class="stamp-sz-btn" data-sz="190">XL</div>
+  </div>
+
   <!-- Tool bar -->
   <div id="toolbar">
     <div class="tool-btn active" data-tool="pencil" title="Pencil">✏️</div>
@@ -558,6 +590,7 @@ let lastX = 0, lastY = 0;
 let startX = 0, startY = 0;
 let undoStack = [];
 let selectedStamp = null;
+let stampSize = 80;
 let onionSkin = false;
 let animPlaying = false;
 let animTimer = null;
@@ -925,6 +958,8 @@ function selectTool(tool) {
 
   const sizeBar = document.getElementById('size-bar');
   sizeBar.classList.toggle('visible', tool === 'pencil' || tool === 'eraser');
+  const stampSizeBar = document.getElementById('stamp-size-bar');
+  stampSizeBar.classList.toggle('visible', tool === 'stamp');
 }
 
 // Brush size
@@ -938,6 +973,15 @@ function updateSizePreview() {
 }
 sizeSlider.addEventListener('input', updateSizePreview);
 updateSizePreview();
+
+// Stamp size buttons
+document.querySelectorAll('.stamp-sz-btn').forEach(btn => {
+  btn.addEventListener('pointerdown', () => {
+    stampSize = parseInt(btn.dataset.sz);
+    document.querySelectorAll('.stamp-sz-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+  });
+});
 
 // ═══════════════════════════════════════════════════════════
 // UNDO
@@ -1016,7 +1060,7 @@ function onPointerDown(e) {
     return;
   }
   if (currentTool === 'stamp' && selectedStamp) {
-    drawStamp(ctx, selectedStamp, pos.x, pos.y, 60);
+    drawStamp(ctx, selectedStamp, pos.x, pos.y, stampSize);
     saveCurrentFrame();
     isDrawing = false;
     playSfx('stamp');
@@ -2300,20 +2344,22 @@ document.getElementById('backdrop').addEventListener('pointerdown', closeAllPane
 // ═══════════════════════════════════════════════════════════
 document.getElementById('btn-share').addEventListener('pointerdown', async () => {
   saveCurrentFrame();
-  mainCanvas.toBlob(async (blob) => {
-    if (!blob) { showToast('Could not save image 😢'); return; }
-    const file = new File([blob], 'my-art.png', { type: 'image/png' });
-    if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
-      try {
-        await navigator.share({ files: [file], title: "My Art!", text: "Look what I made! 🎨" });
-        showToast('Shared! 🎉');
-      } catch(e) {
-        if (e.name !== 'AbortError') downloadFallback(blob);
-      }
-    } else {
-      downloadFallback(blob);
+  // toDataURL is synchronous — keeps us in the user-gesture context across
+  // the subsequent awaits so iOS Safari honours navigator.share({files}).
+  const dataUrl = mainCanvas.toDataURL('image/png');
+  const res = await fetch(dataUrl);
+  const blob = await res.blob();
+  const file = new File([blob], 'amelias-art.png', { type: 'image/png' });
+  if (navigator.share) {
+    try {
+      await navigator.share({ files: [file], title: 'My Art!', text: 'Look what I made! 🎨' });
+      showToast('Shared! 🎉');
+    } catch(e) {
+      if (e.name !== 'AbortError') downloadFallback(blob);
     }
-  }, 'image/png');
+  } else {
+    downloadFallback(blob);
+  }
 });
 
 function downloadFallback(blob) {
