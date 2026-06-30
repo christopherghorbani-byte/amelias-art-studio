@@ -40,10 +40,11 @@
   /* Explicitly lock touch-action on every layer so iOS Safari can't zoom
      any part of the UI via double-tap or pinch. Canvas overrides this below. */
   #app, #app * { touch-action: none; }
-  /* Re-allow native horizontal scroll on the scrollable bars */
-  #toolbar, #colorbar { touch-action: pan-x !important; }
+  /* Re-allow native horizontal scroll on the scrollable bars AND their children,
+     so a pan through a button still scrolls instead of getting swallowed. */
+  #toolbar, #toolbar *, #colorbar, #colorbar * { touch-action: pan-x !important; }
   /* Re-allow native interaction on form controls (sliders, selects) */
-  input[type=range], select, input[type=color] { touch-action: manipulation; }
+  input[type=range], select, input[type=color] { touch-action: manipulation !important; }
 
   #app {
     display: flex;
@@ -678,6 +679,9 @@ document.addEventListener('gestureend',    e => e.preventDefault(), { passive: f
 // iOS commits the zoom on the second touchstart, so we intercept both events.
 let lastTapTime = 0;
 function blockDoubleTap(e) {
+  // Native form controls need their own touch handling — don't intercept them
+  const tag = e.target.tagName;
+  if (tag === 'SELECT' || tag === 'INPUT' || tag === 'TEXTAREA') return;
   const now = Date.now();
   if (now - lastTapTime < 350) e.preventDefault();
   lastTapTime = now;
@@ -876,11 +880,11 @@ const colorInput = document.getElementById('color-input');
 // Needed for buttons inside horizontally-scrollable bars so a swipe
 // to scroll doesn't accidentally trigger the button underneath.
 function tap(el, handler) {
-  let sx, sy;
-  el.addEventListener('pointerdown', e => { sx = e.clientX; sy = e.clientY; });
-  el.addEventListener('pointerup',   e => {
-    if (Math.abs(e.clientX - sx) < 10 && Math.abs(e.clientY - sy) < 10) handler(e);
-  });
+  let sx, sy, drifted;
+  el.addEventListener('pointerdown',  e => { sx = e.clientX; sy = e.clientY; drifted = false; });
+  el.addEventListener('pointermove',  e => { if (Math.hypot(e.clientX - sx, e.clientY - sy) > 14) drifted = true; });
+  el.addEventListener('pointercancel', () => { drifted = true; });
+  el.addEventListener('pointerup',    e => { if (!drifted) handler(e); });
 }
 
 PALETTE.forEach(c => {
