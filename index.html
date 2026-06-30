@@ -40,6 +40,8 @@
   /* Explicitly lock touch-action on every layer so iOS Safari can't zoom
      any part of the UI via double-tap or pinch. Canvas overrides this below. */
   #app, #app * { touch-action: none; }
+  /* Re-allow native horizontal scroll on the scrollable bars */
+  #toolbar, #colorbar { touch-action: pan-x !important; }
   /* Re-allow native interaction on form controls (sliders, selects) */
   input[type=range], select, input[type=color] { touch-action: manipulation; }
 
@@ -660,14 +662,8 @@ function updateZoomBadge() {
   }
 }
 
-document.getElementById('btn-zoom-in').addEventListener('pointerdown', e => {
-  e.stopPropagation();
-  changeZoom(Math.min(MAX_ZOOM, zoom * 2));
-});
-document.getElementById('btn-zoom-out').addEventListener('pointerdown', e => {
-  e.stopPropagation();
-  changeZoom(Math.max(MIN_ZOOM, zoom / 2));
-});
+tap(document.getElementById('btn-zoom-in'), () => changeZoom(Math.min(MAX_ZOOM, zoom * 2)));
+tap(document.getElementById('btn-zoom-out'), () => changeZoom(Math.max(MIN_ZOOM, zoom / 2)));
 document.getElementById('zoom-reset').addEventListener('pointerdown', e => {
   e.stopPropagation();
   changeZoom(1);
@@ -876,12 +872,23 @@ const colorbar = document.getElementById('colorbar');
 const customBtn = document.getElementById('custom-color-btn');
 const colorInput = document.getElementById('color-input');
 
+// tap() fires handler only if pointer didn't scroll before lifting.
+// Needed for buttons inside horizontally-scrollable bars so a swipe
+// to scroll doesn't accidentally trigger the button underneath.
+function tap(el, handler) {
+  let sx, sy;
+  el.addEventListener('pointerdown', e => { sx = e.clientX; sy = e.clientY; });
+  el.addEventListener('pointerup',   e => {
+    if (Math.abs(e.clientX - sx) < 10 && Math.abs(e.clientY - sy) < 10) handler(e);
+  });
+}
+
 PALETTE.forEach(c => {
   const sw = document.createElement('div');
   sw.className = 'swatch';
   sw.style.background = c;
   if (c === currentColor) sw.classList.add('active');
-  sw.addEventListener('pointerdown', () => selectColor(c, sw));
+  tap(sw, () => selectColor(c, sw));
   colorbar.appendChild(sw);
 });
 colorbar.insertBefore(customBtn, colorbar.firstChild);
@@ -903,7 +910,7 @@ colorInput.addEventListener('input', e => {
 // TOOLS
 // ═══════════════════════════════════════════════════════════
 document.querySelectorAll('[data-tool]').forEach(btn => {
-  btn.addEventListener('pointerdown', () => selectTool(btn.dataset.tool));
+  tap(btn, () => selectTool(btn.dataset.tool));
 });
 
 function selectTool(tool) {
@@ -2276,9 +2283,9 @@ function closeAllPanels() {
   document.getElementById('backdrop').classList.remove('visible');
 }
 
-document.getElementById('btn-stamps').addEventListener('pointerdown', () => openPanel('stamp-panel'));
-document.getElementById('btn-anim').addEventListener('pointerdown', () => { renderFrameStrip(); openPanel('anim-panel'); });
-document.getElementById('btn-music').addEventListener('pointerdown', () => openPanel('music-panel'));
+tap(document.getElementById('btn-stamps'), () => openPanel('stamp-panel'));
+tap(document.getElementById('btn-anim'),   () => { renderFrameStrip(); openPanel('anim-panel'); });
+tap(document.getElementById('btn-music'),  () => openPanel('music-panel'));
 document.getElementById('stamp-close').addEventListener('pointerdown', () => closePanel('stamp-panel'));
 document.getElementById('anim-close').addEventListener('pointerdown', () => closePanel('anim-panel'));
 document.getElementById('music-close').addEventListener('pointerdown', () => closePanel('music-panel'));
