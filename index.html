@@ -45,6 +45,9 @@
   #toolbar, #toolbar *, #colorbar, #colorbar * { touch-action: pan-x !important; }
   /* Re-allow native interaction on form controls (sliders, selects) */
   input[type=range], select, input[type=color] { touch-action: manipulation !important; }
+  /* Allow vertical scroll inside slide-up panels */
+  .panel-scroll { touch-action: pan-y !important; }
+  #stamp-grid, #stamp-grid * { touch-action: pan-y !important; }
 
   #app {
     display: flex;
@@ -2118,7 +2121,7 @@ STAMPS.forEach((stamp, idx) => {
   label.textContent = stamp.name;
   btn.appendChild(thumbCanvas);
   btn.appendChild(label);
-  btn.addEventListener('pointerdown', () => {
+  tap(btn, () => {
     document.querySelectorAll('.stamp-btn').forEach(b => b.classList.remove('selected'));
     btn.classList.add('selected');
     selectedStamp = stamp;
