@@ -37,6 +37,12 @@
     user-select: none;
   }
 
+  /* Explicitly lock touch-action on every layer so iOS Safari can't zoom
+     any part of the UI via double-tap or pinch. Canvas overrides this below. */
+  #app, #app * { touch-action: none; }
+  /* Re-allow native interaction on form controls (sliders, selects) */
+  input[type=range], select, input[type=color] { touch-action: manipulation; }
+
   #app {
     display: flex;
     flex-direction: column;
@@ -672,13 +678,16 @@ document.getElementById('zoom-reset').addEventListener('pointerdown', e => {
 document.addEventListener('gesturestart',  e => e.preventDefault(), { passive: false });
 document.addEventListener('gesturechange', e => e.preventDefault(), { passive: false });
 document.addEventListener('gestureend',    e => e.preventDefault(), { passive: false });
-// Block double-tap zoom (stylus quick taps fire this)
+// Block double-tap zoom everywhere (header, toolbar, canvas — all of it).
+// iOS commits the zoom on the second touchstart, so we intercept both events.
 let lastTapTime = 0;
-document.addEventListener('touchend', e => {
+function blockDoubleTap(e) {
   const now = Date.now();
-  if (now - lastTapTime < 300) e.preventDefault();
+  if (now - lastTapTime < 350) e.preventDefault();
   lastTapTime = now;
-}, { passive: false });
+}
+document.addEventListener('touchstart', blockDoubleTap, { passive: false });
+document.addEventListener('touchend',   blockDoubleTap, { passive: false });
 // Block ctrl+wheel zoom (desktop/trackpad)
 document.addEventListener('wheel', e => { if (e.ctrlKey) e.preventDefault(); }, { passive: false });
 
